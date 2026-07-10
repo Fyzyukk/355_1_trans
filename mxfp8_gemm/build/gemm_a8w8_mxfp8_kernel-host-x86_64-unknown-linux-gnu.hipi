@@ -1,0 +1,2267 @@
+# 1 "gemm_a8w8_mxfp8_kernel.cc"
+# 1 "<built-in>" 1
+# 1 "<built-in>" 3
+# 927 "<built-in>" 3
+# 1 "<command line>" 1
+# 1 "<built-in>" 2
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 1 3
+# 33 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 3
+extern "C" {
+  __attribute__((__visibility__("default")))
+  __attribute__((weak))
+  __attribute__((noreturn))
+  __attribute__((device)) void __cxa_pure_virtual(void) {
+    __builtin_trap();
+  }
+  __attribute__((__visibility__("default")))
+  __attribute__((weak))
+  __attribute__((noreturn))
+  __attribute__((device)) void __cxa_deleted_virtual(void) {
+    __builtin_trap();
+  }
+}
+# 55 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 3
+typedef long unsigned int __hip_size_t;
+
+
+extern "C" {
+# 96 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 3
+__attribute__((weak)) inline __attribute__((device)) void *malloc(__hip_size_t __size) {
+  __builtin_trap();
+  return (void *)0;
+}
+__attribute__((weak)) inline __attribute__((device)) void free(void *__ptr) {
+  __builtin_trap();
+}
+
+
+
+
+}
+# 118 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 3
+typedef long unsigned int size_t;
+# 135 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 3
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_libdevice_declares.h" 1 3
+# 20 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_libdevice_declares.h" 3
+extern "C" {
+
+
+
+__attribute__((device)) __attribute__((const)) float __ocml_acos_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_acosh_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_asin_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_asinh_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_atan2_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_atan_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_atanh_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_cbrt_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_ceil_f32(float);
+__attribute__((device)) __attribute__((const)) __attribute__((device)) float __ocml_copysign_f32(float,
+                                                                       float);
+__attribute__((device)) float __ocml_cos_f32(float);
+__attribute__((device)) float __ocml_native_cos_f32(float);
+__attribute__((device)) __attribute__((pure)) __attribute__((device)) float __ocml_cosh_f32(float);
+__attribute__((device)) float __ocml_cospi_f32(float);
+__attribute__((device)) float __ocml_i0_f32(float);
+__attribute__((device)) float __ocml_i1_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_erfc_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_erfcinv_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_erfcx_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_erf_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_erfinv_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_exp10_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_native_exp10_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_exp2_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_exp_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_native_exp_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_expm1_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_fabs_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_fdim_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_floor_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_fma_f32(float, float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_fmax_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_fmin_f32(float, float);
+__attribute__((device)) __attribute__((const)) __attribute__((device)) float __ocml_fmod_f32(float,
+                                                                   float);
+__attribute__((device)) float __ocml_frexp_f32(float, __attribute__((opencl_private)) int *);
+__attribute__((device)) __attribute__((const)) float __ocml_hypot_f32(float, float);
+__attribute__((device)) __attribute__((const)) int __ocml_ilogb_f32(float);
+__attribute__((device)) __attribute__((const)) int __ocml_isfinite_f32(float);
+__attribute__((device)) __attribute__((const)) int __ocml_isinf_f32(float);
+__attribute__((device)) __attribute__((const)) int __ocml_isnan_f32(float);
+__attribute__((device)) float __ocml_j0_f32(float);
+__attribute__((device)) float __ocml_j1_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_ldexp_f32(float, int);
+__attribute__((device)) float __ocml_lgamma_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_log10_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_native_log10_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_log1p_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_log2_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_native_log2_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_logb_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_log_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_native_log_f32(float);
+__attribute__((device)) float __ocml_modf_f32(float, __attribute__((opencl_private)) float *);
+__attribute__((device)) __attribute__((const)) float __ocml_nearbyint_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_nextafter_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_len3_f32(float, float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_len4_f32(float, float, float,
+                                                        float);
+__attribute__((device)) __attribute__((pure)) float __ocml_ncdf_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_ncdfinv_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_pow_f32(float, float);
+__attribute__((device)) __attribute__((pure)) float __ocml_pown_f32(float, int);
+__attribute__((device)) __attribute__((pure)) float __ocml_rcbrt_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_remainder_f32(float, float);
+__attribute__((device)) float __ocml_remquo_f32(float, float, __attribute__((opencl_private)) int *);
+__attribute__((device)) __attribute__((const)) float __ocml_rhypot_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_rint_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_rlen3_f32(float, float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_rlen4_f32(float, float, float,
+                                                         float);
+__attribute__((device)) __attribute__((const)) float __ocml_round_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_rsqrt_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_scalb_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_scalbn_f32(float, int);
+__attribute__((device)) __attribute__((const)) int __ocml_signbit_f32(float);
+__attribute__((device)) float __ocml_sincos_f32(float, __attribute__((opencl_private)) float *);
+__attribute__((device)) float __ocml_sincospi_f32(float, __attribute__((opencl_private)) float *);
+__attribute__((device)) float __ocml_sin_f32(float);
+__attribute__((device)) float __ocml_native_sin_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_sinh_f32(float);
+__attribute__((device)) float __ocml_sinpi_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_sqrt_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_native_sqrt_f32(float);
+__attribute__((device)) float __ocml_tan_f32(float);
+__attribute__((device)) __attribute__((pure)) float __ocml_tanh_f32(float);
+__attribute__((device)) float __ocml_tgamma_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_trunc_f32(float);
+__attribute__((device)) float __ocml_y0_f32(float);
+__attribute__((device)) float __ocml_y1_f32(float);
+
+
+__attribute__((device)) __attribute__((const)) float __ocml_add_rte_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_add_rtn_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_add_rtp_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_add_rtz_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_sub_rte_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_sub_rtn_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_sub_rtp_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_sub_rtz_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_mul_rte_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_mul_rtn_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_mul_rtp_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_mul_rtz_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_div_rte_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_div_rtn_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_div_rtp_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_div_rtz_f32(float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_sqrt_rte_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_sqrt_rtn_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_sqrt_rtp_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_sqrt_rtz_f32(float);
+__attribute__((device)) __attribute__((const)) float __ocml_fma_rte_f32(float, float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_fma_rtn_f32(float, float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_fma_rtp_f32(float, float, float);
+__attribute__((device)) __attribute__((const)) float __ocml_fma_rtz_f32(float, float, float);
+
+
+
+
+__attribute__((device)) __attribute__((const)) double __ocml_acos_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_acosh_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_asin_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_asinh_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_atan2_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_atan_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_atanh_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_cbrt_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_ceil_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_copysign_f64(double, double);
+__attribute__((device)) double __ocml_cos_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_cosh_f64(double);
+__attribute__((device)) double __ocml_cospi_f64(double);
+__attribute__((device)) double __ocml_i0_f64(double);
+__attribute__((device)) double __ocml_i1_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_erfc_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_erfcinv_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_erfcx_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_erf_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_erfinv_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_exp10_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_exp2_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_exp_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_expm1_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_fabs_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_fdim_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_floor_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_fma_f64(double, double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_fmax_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_fmin_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_fmod_f64(double, double);
+__attribute__((device)) double __ocml_frexp_f64(double, __attribute__((opencl_private)) int *);
+__attribute__((device)) __attribute__((const)) double __ocml_hypot_f64(double, double);
+__attribute__((device)) __attribute__((const)) int __ocml_ilogb_f64(double);
+__attribute__((device)) __attribute__((const)) int __ocml_isfinite_f64(double);
+__attribute__((device)) __attribute__((const)) int __ocml_isinf_f64(double);
+__attribute__((device)) __attribute__((const)) int __ocml_isnan_f64(double);
+__attribute__((device)) double __ocml_j0_f64(double);
+__attribute__((device)) double __ocml_j1_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_ldexp_f64(double, int);
+__attribute__((device)) double __ocml_lgamma_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_log10_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_log1p_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_log2_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_logb_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_log_f64(double);
+__attribute__((device)) double __ocml_modf_f64(double, __attribute__((opencl_private)) double *);
+__attribute__((device)) __attribute__((const)) double __ocml_nearbyint_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_nextafter_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_len3_f64(double, double,
+                                                         double);
+__attribute__((device)) __attribute__((const)) double __ocml_len4_f64(double, double, double,
+                                                         double);
+__attribute__((device)) __attribute__((pure)) double __ocml_ncdf_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_ncdfinv_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_pow_f64(double, double);
+__attribute__((device)) __attribute__((pure)) double __ocml_pown_f64(double, int);
+__attribute__((device)) __attribute__((pure)) double __ocml_rcbrt_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_remainder_f64(double, double);
+__attribute__((device)) double __ocml_remquo_f64(double, double, __attribute__((opencl_private)) int *);
+__attribute__((device)) __attribute__((const)) double __ocml_rhypot_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_rint_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_rlen3_f64(double, double,
+                                                          double);
+__attribute__((device)) __attribute__((const)) double __ocml_rlen4_f64(double, double,
+                                                          double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_round_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_rsqrt_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_scalb_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_scalbn_f64(double, int);
+__attribute__((device)) __attribute__((const)) int __ocml_signbit_f64(double);
+__attribute__((device)) double __ocml_sincos_f64(double, __attribute__((opencl_private)) double *);
+__attribute__((device)) double __ocml_sincospi_f64(double, __attribute__((opencl_private)) double *);
+__attribute__((device)) double __ocml_sin_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_sinh_f64(double);
+__attribute__((device)) double __ocml_sinpi_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_sqrt_f64(double);
+__attribute__((device)) double __ocml_tan_f64(double);
+__attribute__((device)) __attribute__((pure)) double __ocml_tanh_f64(double);
+__attribute__((device)) double __ocml_tgamma_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_trunc_f64(double);
+__attribute__((device)) double __ocml_y0_f64(double);
+__attribute__((device)) double __ocml_y1_f64(double);
+
+
+__attribute__((device)) __attribute__((const)) double __ocml_add_rte_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_add_rtn_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_add_rtp_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_add_rtz_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_sub_rte_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_sub_rtn_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_sub_rtp_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_sub_rtz_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_mul_rte_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_mul_rtn_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_mul_rtp_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_mul_rtz_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_div_rte_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_div_rtn_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_div_rtp_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_div_rtz_f64(double, double);
+__attribute__((device)) __attribute__((const)) double __ocml_sqrt_rte_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_sqrt_rtn_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_sqrt_rtp_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_sqrt_rtz_f64(double);
+__attribute__((device)) __attribute__((const)) double __ocml_fma_rte_f64(double, double,
+                                                            double);
+__attribute__((device)) __attribute__((const)) double __ocml_fma_rtn_f64(double, double,
+                                                            double);
+__attribute__((device)) __attribute__((const)) double __ocml_fma_rtp_f64(double, double,
+                                                            double);
+__attribute__((device)) __attribute__((const)) double __ocml_fma_rtz_f64(double, double,
+                                                            double);
+
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_ceil_f16(_Float16);
+__attribute__((device)) _Float16 __ocml_cos_f16(_Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_cvtrtn_f16_f32(float);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_cvtrtp_f16_f32(float);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_cvtrtz_f16_f32(float);
+__attribute__((device)) __attribute__((pure)) _Float16 __ocml_exp_f16(_Float16);
+__attribute__((device)) __attribute__((pure)) _Float16 __ocml_exp10_f16(_Float16);
+__attribute__((device)) __attribute__((pure)) _Float16 __ocml_exp2_f16(_Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_floor_f16(_Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_fma_f16(_Float16, _Float16,
+                                                          _Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_fmax_f16(_Float16, _Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_fmin_f16(_Float16, _Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_fabs_f16(_Float16);
+__attribute__((device)) __attribute__((const)) int __ocml_isinf_f16(_Float16);
+__attribute__((device)) __attribute__((const)) int __ocml_isnan_f16(_Float16);
+__attribute__((device)) __attribute__((pure)) _Float16 __ocml_log_f16(_Float16);
+__attribute__((device)) __attribute__((pure)) _Float16 __ocml_log10_f16(_Float16);
+__attribute__((device)) __attribute__((pure)) _Float16 __ocml_log2_f16(_Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_rint_f16(_Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_rsqrt_f16(_Float16);
+__attribute__((device)) _Float16 __ocml_sin_f16(_Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_sqrt_f16(_Float16);
+__attribute__((device)) __attribute__((const)) _Float16 __ocml_trunc_f16(_Float16);
+__attribute__((device)) __attribute__((pure)) _Float16 __ocml_pown_f16(_Float16, int);
+
+typedef _Float16 __2f16 __attribute__((ext_vector_type(2)));
+typedef short __2i16 __attribute__((ext_vector_type(2)));
+
+
+
+typedef bool __ockl_bool;
+
+
+
+
+__attribute__((device)) __attribute__((const)) float __ockl_fdot2(__2f16 a, __2f16 b,
+                                                     float c, __ockl_bool s);
+__attribute__((device)) __attribute__((const)) __2f16 __ocml_ceil_2f16(__2f16);
+__attribute__((device)) __attribute__((const)) __2f16 __ocml_fabs_2f16(__2f16);
+__attribute__((device)) __2f16 __ocml_cos_2f16(__2f16);
+__attribute__((device)) __attribute__((pure)) __2f16 __ocml_exp_2f16(__2f16);
+__attribute__((device)) __attribute__((pure)) __2f16 __ocml_exp10_2f16(__2f16);
+__attribute__((device)) __attribute__((pure)) __2f16 __ocml_exp2_2f16(__2f16);
+__attribute__((device)) __attribute__((const)) __2f16 __ocml_floor_2f16(__2f16);
+__attribute__((device)) __attribute__((const))
+__2f16 __ocml_fma_2f16(__2f16, __2f16, __2f16);
+__attribute__((device)) __attribute__((const)) __2i16 __ocml_isinf_2f16(__2f16);
+__attribute__((device)) __attribute__((const)) __2i16 __ocml_isnan_2f16(__2f16);
+__attribute__((device)) __attribute__((pure)) __2f16 __ocml_log_2f16(__2f16);
+__attribute__((device)) __attribute__((pure)) __2f16 __ocml_log10_2f16(__2f16);
+__attribute__((device)) __attribute__((pure)) __2f16 __ocml_log2_2f16(__2f16);
+# 321 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_libdevice_declares.h" 3
+__attribute__((device)) inline _Float16 __llvm_amdgcn_rcp_f16(_Float16 x) {
+  return ((_Float16)1.0f) / x;
+}
+
+
+__attribute__((device)) inline __2f16
+__llvm_amdgcn_rcp_2f16(__2f16 __x)
+{
+  return ((__2f16)1.0f) / __x;
+}
+
+
+
+__attribute__((device)) __attribute__((const)) __2f16 __ocml_rint_2f16(__2f16);
+__attribute__((device)) __attribute__((const)) __2f16 __ocml_rsqrt_2f16(__2f16);
+__attribute__((device)) __2f16 __ocml_sin_2f16(__2f16);
+__attribute__((device)) __attribute__((const)) __2f16 __ocml_sqrt_2f16(__2f16);
+__attribute__((device)) __attribute__((const)) __2f16 __ocml_trunc_2f16(__2f16);
+__attribute__((device)) __attribute__((const)) __2f16 __ocml_pown_2f16(__2f16, __2i16);
+
+
+}
+# 136 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 2 3
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 1 3
+# 114 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+long unsigned int __make_mantissa_base8(const char *__tagp __attribute__((nonnull))) {
+  long unsigned int __r = 0;
+  while (*__tagp != '\0') {
+    char __tmp = *__tagp;
+
+    if (__tmp >= '0' && __tmp <= '7')
+      __r = (__r * 8u) + __tmp - '0';
+    else
+      return 0;
+
+    ++__tagp;
+  }
+
+  return __r;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long unsigned int __make_mantissa_base10(const char *__tagp __attribute__((nonnull))) {
+  long unsigned int __r = 0;
+  while (*__tagp != '\0') {
+    char __tmp = *__tagp;
+
+    if (__tmp >= '0' && __tmp <= '9')
+      __r = (__r * 10u) + __tmp - '0';
+    else
+      return 0;
+
+    ++__tagp;
+  }
+
+  return __r;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long unsigned int __make_mantissa_base16(const char *__tagp __attribute__((nonnull))) {
+  long unsigned int __r = 0;
+  while (*__tagp != '\0') {
+    char __tmp = *__tagp;
+
+    if (__tmp >= '0' && __tmp <= '9')
+      __r = (__r * 16u) + __tmp - '0';
+    else if (__tmp >= 'a' && __tmp <= 'f')
+      __r = (__r * 16u) + __tmp - 'a' + 10;
+    else if (__tmp >= 'A' && __tmp <= 'F')
+      __r = (__r * 16u) + __tmp - 'A' + 10;
+    else
+      return 0;
+
+    ++__tagp;
+  }
+
+  return __r;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long unsigned int __make_mantissa(const char *__tagp __attribute__((nonnull))) {
+  if (*__tagp == '0') {
+    ++__tagp;
+
+    if (*__tagp == 'x' || *__tagp == 'X')
+      return __make_mantissa_base16(__tagp);
+    else
+      return __make_mantissa_base8(__tagp);
+  }
+
+  return __make_mantissa_base10(__tagp);
+}
+
+
+
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __cosf(float __x) { return __ocml_native_cos_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __exp10f(float __x) {
+  const float __log2_10 = 0x1.a934f0p+1f;
+  return __builtin_amdgcn_exp2f(__log2_10 * __x);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __expf(float __x) {
+  const float __log2_e = 0x1.715476p+0;
+  return __builtin_amdgcn_exp2f(__log2_e * __x);
+}
+# 212 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+float __fadd_rn(float __x, float __y) { return __x + __y; }
+# 226 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+float __fdiv_rn(float __x, float __y) { return __x / __y; }
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __fdividef(float __x, float __y) { return __x / __y; }
+# 251 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+float __fmaf_rn(float __x, float __y, float __z) {
+  return __builtin_fmaf(__x, __y, __z);
+}
+# 267 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+float __fmul_rn(float __x, float __y) { return __x * __y; }
+# 281 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+float __frcp_rn(float __x) { return 1.0f / __x; }
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __frsqrt_rn(float __x) { return __builtin_amdgcn_rsqf(__x); }
+# 298 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+float __fsqrt_rn(float __x) { return __ocml_native_sqrt_f32(__x); }
+# 312 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+float __fsub_rn(float __x, float __y) { return __x - __y; }
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __log10f(float __x) { return __builtin_log10f(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __log2f(float __x) { return __builtin_amdgcn_logf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __logf(float __x) { return __builtin_logf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __powf(float __x, float __y) { return __ocml_pow_f32(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __saturatef(float __x) { return (__x < 0) ? 0 : ((__x > 1) ? 1 : __x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+void __sincosf(float __x, float *__sinptr, float *__cosptr) {
+  *__sinptr = __ocml_native_sin_f32(__x);
+  *__cosptr = __ocml_native_cos_f32(__x);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __sinf(float __x) { return __ocml_native_sin_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float __tanf(float __x) {
+  return __sinf(__x) * __builtin_amdgcn_rcpf(__cosf(__x));
+}
+
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+int abs(int __x) {
+  return __builtin_abs(__x);
+}
+static __attribute__((device)) inline __attribute__((always_inline))
+long labs(long __x) {
+  return __builtin_labs(__x);
+}
+static __attribute__((device)) inline __attribute__((always_inline))
+long long llabs(long long __x) {
+  return __builtin_llabs(__x);
+}
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float acosf(float __x) { return __ocml_acos_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float acoshf(float __x) { return __ocml_acosh_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float asinf(float __x) { return __ocml_asin_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float asinhf(float __x) { return __ocml_asinh_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float atan2f(float __x, float __y) { return __ocml_atan2_f32(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float atanf(float __x) { return __ocml_atan_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float atanhf(float __x) { return __ocml_atanh_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float cbrtf(float __x) { return __ocml_cbrt_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float ceilf(float __x) { return __builtin_ceilf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float copysignf(float __x, float __y) { return __builtin_copysignf(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float cosf(float __x) { return __cosf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float coshf(float __x) { return __ocml_cosh_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float cospif(float __x) { return __ocml_cospi_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float cyl_bessel_i0f(float __x) { return __ocml_i0_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float cyl_bessel_i1f(float __x) { return __ocml_i1_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float erfcf(float __x) { return __ocml_erfc_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float erfcinvf(float __x) { return __ocml_erfcinv_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float erfcxf(float __x) { return __ocml_erfcx_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float erff(float __x) { return __ocml_erf_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float erfinvf(float __x) { return __ocml_erfinv_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float exp10f(float __x) { return __ocml_exp10_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float exp2f(float __x) { return __builtin_exp2f(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float expf(float __x) { return __builtin_expf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float expm1f(float __x) { return __ocml_expm1_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float fabsf(float __x) { return __builtin_fabsf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float fdimf(float __x, float __y) { return __ocml_fdim_f32(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float fdividef(float __x, float __y) { return __x / __y; }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float floorf(float __x) { return __builtin_floorf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float fmaf(float __x, float __y, float __z) {
+  return __builtin_fmaf(__x, __y, __z);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float fmaxf(float __x, float __y) { return __builtin_fmaxf(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float fminf(float __x, float __y) { return __builtin_fminf(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float fmodf(float __x, float __y) { return __ocml_fmod_f32(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float frexpf(float __x, int *__nptr) {
+  return __builtin_frexpf(__x, __nptr);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float hypotf(float __x, float __y) { return __ocml_hypot_f32(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+int ilogbf(float __x) { return __ocml_ilogb_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+bool __finitef(float __x) { return __builtin_isfinite(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+bool __isinff(float __x) { return __builtin_isinf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+bool __isnanf(float __x) { return __builtin_isnan(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float j0f(float __x) { return __ocml_j0_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float j1f(float __x) { return __ocml_j1_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float jnf(int __n, float __x) {
+
+
+
+  if (__n == 0)
+    return j0f(__x);
+  if (__n == 1)
+    return j1f(__x);
+
+  float __x0 = j0f(__x);
+  float __x1 = j1f(__x);
+  for (int __i = 1; __i < __n; ++__i) {
+    float __x2 = (2 * __i) / __x * __x1 - __x0;
+    __x0 = __x1;
+    __x1 = __x2;
+  }
+
+  return __x1;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float ldexpf(float __x, int __e) { return __builtin_amdgcn_ldexpf(__x, __e); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float lgammaf(float __x) { return __ocml_lgamma_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long long int llrintf(float __x) { return __builtin_rintf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long long int llroundf(float __x) { return __builtin_roundf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float log10f(float __x) { return __builtin_log10f(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float log1pf(float __x) { return __ocml_log1p_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float log2f(float __x) { return __log2f(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float logbf(float __x) { return __ocml_logb_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float logf(float __x) { return __logf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long int lrintf(float __x) { return __builtin_rintf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long int lroundf(float __x) { return __builtin_roundf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float modff(float __x, float *__iptr) {
+  float __tmp;
+
+
+
+  float __r = __ocml_modf_f32(__x, (__attribute__((opencl_private)) float *)&__tmp);
+  *__iptr = __tmp;
+  return __r;
+}
+
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float nanf(const char *__tagp __attribute__((nonnull))) {
+  union {
+    float val;
+    struct ieee_float {
+      unsigned int mantissa : 22;
+      unsigned int quiet : 1;
+      unsigned int exponent : 8;
+      unsigned int sign : 1;
+    } bits;
+  } __tmp;
+  static_assert((sizeof(__tmp.val)) == (sizeof(__tmp.bits)), "");
+
+  __tmp.bits.sign = 0u;
+  __tmp.bits.exponent = ~0u;
+  __tmp.bits.quiet = 1u;
+  __tmp.bits.mantissa = __make_mantissa(__tagp);
+
+  return __tmp.val;
+}
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float nearbyintf(float __x) { return __builtin_nearbyintf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float nextafterf(float __x, float __y) {
+  return __ocml_nextafter_f32(__x, __y);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float norm3df(float __x, float __y, float __z) {
+  return __ocml_len3_f32(__x, __y, __z);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float norm4df(float __x, float __y, float __z, float __w) {
+  return __ocml_len4_f32(__x, __y, __z, __w);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float normcdff(float __x) { return __ocml_ncdf_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float normcdfinvf(float __x) { return __ocml_ncdfinv_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float normf(int __dim,
+            const float *__a) {
+  float __r = 0;
+  while (__dim--) {
+    __r += __a[0] * __a[0];
+    ++__a;
+  }
+
+  return __builtin_sqrtf(__r);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float powf(float __x, float __y) { return __ocml_pow_f32(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float powif(float __x, int __y) { return __ocml_pown_f32(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float rcbrtf(float __x) { return __ocml_rcbrt_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float remainderf(float __x, float __y) {
+  return __ocml_remainder_f32(__x, __y);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float remquof(float __x, float __y, int *__quo) {
+  int __tmp;
+
+
+
+  float __r = __ocml_remquo_f32(__x, __y, (__attribute__((opencl_private)) int *)&__tmp);
+  *__quo = __tmp;
+
+  return __r;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float rhypotf(float __x, float __y) { return __ocml_rhypot_f32(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float rintf(float __x) { return __builtin_rintf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float rnorm3df(float __x, float __y, float __z) {
+  return __ocml_rlen3_f32(__x, __y, __z);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float rnorm4df(float __x, float __y, float __z, float __w) {
+  return __ocml_rlen4_f32(__x, __y, __z, __w);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float rnormf(int __dim,
+             const float *__a) {
+  float __r = 0;
+  while (__dim--) {
+    __r += __a[0] * __a[0];
+    ++__a;
+  }
+
+  return __ocml_rsqrt_f32(__r);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float roundf(float __x) { return __builtin_roundf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float rsqrtf(float __x) { return __ocml_rsqrt_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float scalblnf(float __x, long int __n) {
+  return (__n < 9223372036854775807L) ? __builtin_amdgcn_ldexpf(__x, __n)
+                         : __ocml_scalb_f32(__x, __n);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float scalbnf(float __x, int __n) { return __builtin_amdgcn_ldexpf(__x, __n); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+bool __signbitf(float __x) { return __builtin_signbitf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+void sincosf(float __x, float *__sinptr, float *__cosptr) {
+  float __tmp;
+
+
+
+
+
+
+  *__sinptr = __ocml_sincos_f32(__x, (__attribute__((opencl_private)) float *)&__tmp);
+  *__cosptr = __tmp;
+
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+void sincospif(float __x, float *__sinptr, float *__cosptr) {
+  float __tmp;
+
+
+
+  *__sinptr = __ocml_sincospi_f32(__x, (__attribute__((opencl_private)) float *)&__tmp);
+  *__cosptr = __tmp;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float sinf(float __x) { return __sinf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float sinhf(float __x) { return __ocml_sinh_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float sinpif(float __x) { return __ocml_sinpi_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float sqrtf(float __x) { return __builtin_sqrtf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float tanf(float __x) { return __ocml_tan_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float tanhf(float __x) { return __ocml_tanh_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float tgammaf(float __x) { return __ocml_tgamma_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float truncf(float __x) { return __builtin_truncf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float y0f(float __x) { return __ocml_y0_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float y1f(float __x) { return __ocml_y1_f32(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float ynf(int __n, float __x) {
+
+
+
+
+  if (__n == 0)
+    return y0f(__x);
+  if (__n == 1)
+    return y1f(__x);
+
+  float __x0 = y0f(__x);
+  float __x1 = y1f(__x);
+  for (int __i = 1; __i < __n; ++__i) {
+    float __x2 = (2 * __i) / __x * __x1 - __x0;
+    __x0 = __x1;
+    __x1 = __x2;
+  }
+
+  return __x1;
+}
+
+
+
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double acos(double __x) { return __ocml_acos_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double acosh(double __x) { return __ocml_acosh_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double asin(double __x) { return __ocml_asin_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double asinh(double __x) { return __ocml_asinh_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double atan(double __x) { return __ocml_atan_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double atan2(double __x, double __y) { return __ocml_atan2_f64(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double atanh(double __x) { return __ocml_atanh_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double cbrt(double __x) { return __ocml_cbrt_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double ceil(double __x) { return __builtin_ceil(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double copysign(double __x, double __y) {
+  return __builtin_copysign(__x, __y);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double cos(double __x) { return __ocml_cos_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double cosh(double __x) { return __ocml_cosh_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double cospi(double __x) { return __ocml_cospi_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double cyl_bessel_i0(double __x) { return __ocml_i0_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double cyl_bessel_i1(double __x) { return __ocml_i1_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double erf(double __x) { return __ocml_erf_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double erfc(double __x) { return __ocml_erfc_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double erfcinv(double __x) { return __ocml_erfcinv_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double erfcx(double __x) { return __ocml_erfcx_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double erfinv(double __x) { return __ocml_erfinv_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double exp(double __x) { return __ocml_exp_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double exp10(double __x) { return __ocml_exp10_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double exp2(double __x) { return __ocml_exp2_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double expm1(double __x) { return __ocml_expm1_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double fabs(double __x) { return __builtin_fabs(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double fdim(double __x, double __y) { return __ocml_fdim_f64(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double floor(double __x) { return __builtin_floor(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double fma(double __x, double __y, double __z) {
+  return __builtin_fma(__x, __y, __z);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double fmax(double __x, double __y) { return __builtin_fmax(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double fmin(double __x, double __y) { return __builtin_fmin(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double fmod(double __x, double __y) { return __ocml_fmod_f64(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double frexp(double __x, int *__nptr) {
+  return __builtin_frexp(__x, __nptr);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double hypot(double __x, double __y) { return __ocml_hypot_f64(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+int ilogb(double __x) { return __ocml_ilogb_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+bool __finite(double __x) { return __builtin_isfinite(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+bool __isinf(double __x) { return __builtin_isinf(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+bool __isnan(double __x) { return __builtin_isnan(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double j0(double __x) { return __ocml_j0_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double j1(double __x) { return __ocml_j1_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double jn(int __n, double __x) {
+
+
+
+
+  if (__n == 0)
+    return j0(__x);
+  if (__n == 1)
+    return j1(__x);
+
+  double __x0 = j0(__x);
+  double __x1 = j1(__x);
+  for (int __i = 1; __i < __n; ++__i) {
+    double __x2 = (2 * __i) / __x * __x1 - __x0;
+    __x0 = __x1;
+    __x1 = __x2;
+  }
+  return __x1;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double ldexp(double __x, int __e) { return __builtin_amdgcn_ldexp(__x, __e); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double lgamma(double __x) { return __ocml_lgamma_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long long int llrint(double __x) { return __builtin_rint(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long long int llround(double __x) { return __builtin_round(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double log(double __x) { return __ocml_log_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double log10(double __x) { return __ocml_log10_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double log1p(double __x) { return __ocml_log1p_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double log2(double __x) { return __ocml_log2_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double logb(double __x) { return __ocml_logb_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long int lrint(double __x) { return __builtin_rint(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+long int lround(double __x) { return __builtin_round(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double modf(double __x, double *__iptr) {
+  double __tmp;
+
+
+
+  double __r = __ocml_modf_f64(__x, (__attribute__((opencl_private)) double *)&__tmp);
+  *__iptr = __tmp;
+
+  return __r;
+}
+
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double nan(const char *__tagp) {
+
+  union {
+    double val;
+    struct ieee_double {
+      long unsigned int mantissa : 51;
+      unsigned int quiet : 1;
+      unsigned int exponent : 11;
+      unsigned int sign : 1;
+    } bits;
+  } __tmp;
+  static_assert((sizeof(__tmp.val)) == (sizeof(__tmp.bits)), "");
+
+  __tmp.bits.sign = 0u;
+  __tmp.bits.exponent = ~0u;
+  __tmp.bits.quiet = 1u;
+  __tmp.bits.mantissa = __make_mantissa(__tagp);
+
+  return __tmp.val;
+
+
+
+
+
+
+}
+
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double nearbyint(double __x) { return __builtin_nearbyint(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double nextafter(double __x, double __y) {
+  return __ocml_nextafter_f64(__x, __y);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double norm(int __dim,
+            const double *__a) {
+  double __r = 0;
+  while (__dim--) {
+    __r += __a[0] * __a[0];
+    ++__a;
+  }
+
+  return __builtin_sqrt(__r);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double norm3d(double __x, double __y, double __z) {
+  return __ocml_len3_f64(__x, __y, __z);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double norm4d(double __x, double __y, double __z, double __w) {
+  return __ocml_len4_f64(__x, __y, __z, __w);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double normcdf(double __x) { return __ocml_ncdf_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double normcdfinv(double __x) { return __ocml_ncdfinv_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double pow(double __x, double __y) { return __ocml_pow_f64(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double powi(double __x, int __y) { return __ocml_pown_f64(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double rcbrt(double __x) { return __ocml_rcbrt_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double remainder(double __x, double __y) {
+  return __ocml_remainder_f64(__x, __y);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double remquo(double __x, double __y, int *__quo) {
+  int __tmp;
+
+
+
+  double __r = __ocml_remquo_f64(__x, __y, (__attribute__((opencl_private)) int *)&__tmp);
+  *__quo = __tmp;
+
+  return __r;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double rhypot(double __x, double __y) { return __ocml_rhypot_f64(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double rint(double __x) { return __builtin_rint(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double rnorm(int __dim,
+             const double *__a) {
+  double __r = 0;
+  while (__dim--) {
+    __r += __a[0] * __a[0];
+    ++__a;
+  }
+
+  return __ocml_rsqrt_f64(__r);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double rnorm3d(double __x, double __y, double __z) {
+  return __ocml_rlen3_f64(__x, __y, __z);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double rnorm4d(double __x, double __y, double __z, double __w) {
+  return __ocml_rlen4_f64(__x, __y, __z, __w);
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double round(double __x) { return __builtin_round(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double rsqrt(double __x) { return __ocml_rsqrt_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double scalbln(double __x, long int __n) {
+  return (__n < 9223372036854775807L) ? __builtin_amdgcn_ldexp(__x, __n)
+                         : __ocml_scalb_f64(__x, __n);
+}
+static __attribute__((device)) inline __attribute__((always_inline))
+double scalbn(double __x, int __n) { return __builtin_amdgcn_ldexp(__x, __n); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+bool __signbit(double __x) { return __builtin_signbit(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double sin(double __x) { return __ocml_sin_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+void sincos(double __x, double *__sinptr, double *__cosptr) {
+  double __tmp;
+
+
+
+  *__sinptr = __ocml_sincos_f64(__x, (__attribute__((opencl_private)) double *)&__tmp);
+  *__cosptr = __tmp;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+void sincospi(double __x, double *__sinptr, double *__cosptr) {
+  double __tmp;
+
+
+
+  *__sinptr = __ocml_sincospi_f64(__x, (__attribute__((opencl_private)) double *)&__tmp);
+  *__cosptr = __tmp;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double sinh(double __x) { return __ocml_sinh_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double sinpi(double __x) { return __ocml_sinpi_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double sqrt(double __x) { return __builtin_sqrt(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double tan(double __x) { return __ocml_tan_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double tanh(double __x) { return __ocml_tanh_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double tgamma(double __x) { return __ocml_tgamma_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double trunc(double __x) { return __builtin_trunc(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double y0(double __x) { return __ocml_y0_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double y1(double __x) { return __ocml_y1_f64(__x); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double yn(int __n, double __x) {
+
+
+
+
+  if (__n == 0)
+    return y0(__x);
+  if (__n == 1)
+    return y1(__x);
+
+  double __x0 = y0(__x);
+  double __x1 = y1(__x);
+  for (int __i = 1; __i < __n; ++__i) {
+    double __x2 = (2 * __i) / __x * __x1 - __x0;
+    __x0 = __x1;
+    __x1 = __x2;
+  }
+
+  return __x1;
+}
+# 1180 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+double __dadd_rn(double __x, double __y) { return __x + __y; }
+# 1202 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+double __ddiv_rn(double __x, double __y) { return __x / __y; }
+# 1224 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+double __dmul_rn(double __x, double __y) { return __x * __y; }
+# 1238 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+double __drcp_rn(double __x) { return 1.0 / __x; }
+# 1252 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+double __dsqrt_rn(double __x) { return __builtin_sqrt(__x); }
+# 1274 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+double __dsub_rn(double __x, double __y) { return __x - __y; }
+# 1296 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+static __attribute__((device)) inline __attribute__((always_inline))
+double __fma_rn(double __x, double __y, double __z) {
+  return __builtin_fma(__x, __y, __z);
+}
+# 1315 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_math.h" 3
+template <class T> static __attribute__((device)) inline __attribute__((always_inline)) T min(T __arg1, T __arg2) {
+  return (__arg1 < __arg2) ? __arg1 : __arg2;
+}
+
+template <class T> static __attribute__((device)) inline __attribute__((always_inline)) T max(T __arg1, T __arg2) {
+  return (__arg1 > __arg2) ? __arg1 : __arg2;
+}
+
+
+static __attribute__((device)) inline __attribute__((always_inline)) int min(int __arg1, int __arg2) {
+  return (__arg1 < __arg2) ? __arg1 : __arg2;
+}
+static __attribute__((device)) inline __attribute__((always_inline)) int max(int __arg1, int __arg2) {
+  return (__arg1 > __arg2) ? __arg1 : __arg2;
+}
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float max(float __x, float __y) { return __builtin_fmaxf(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double max(double __x, double __y) { return __builtin_fmax(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+float min(float __x, float __y) { return __builtin_fminf(__x, __y); }
+
+static __attribute__((device)) inline __attribute__((always_inline))
+double min(double __x, double __y) { return __builtin_fmin(__x, __y); }
+# 137 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 2 3
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_stdlib.h" 1 3
+# 138 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 2 3
+
+
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_cmath.h" 1 3
+# 46 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_cmath.h" 3
+static __attribute__((device)) inline __attribute__((always_inline)) double abs(double __x) { return ::fabs(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float abs(float __x) { return ::fabsf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) long long abs(long long __n) { return ::llabs(__n); }
+static __attribute__((device)) inline __attribute__((always_inline)) long abs(long __n) { return ::labs(__n); }
+static __attribute__((device)) inline __attribute__((always_inline)) float fma(float __x, float __y, float __z) {
+  return ::fmaf(__x, __y, __z);
+}
+# 66 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_cmath.h" 3
+static __attribute__((device)) inline __attribute__((always_inline)) float frexp(float __arg, int *__exp) {
+  return ::frexpf(__arg, __exp);
+}
+# 98 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_cmath.h" 3
+static __attribute__((device)) inline __attribute__((always_inline)) bool isinf(float __x) { return ::__isinff(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) bool isinf(double __x) { return ::__isinf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) bool isfinite(float __x) { return ::__finitef(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) bool isfinite(double __x) { return ::__finite(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) bool isnan(float __x) { return ::__isnanf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) bool isnan(double __x) { return ::__isnan(__x); }
+
+
+
+
+
+static __attribute__((device)) inline __attribute__((always_inline)) bool isgreater(float __x, float __y) {
+  return __builtin_isgreater(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool isgreater(double __x, double __y) {
+  return __builtin_isgreater(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool isgreaterequal(float __x, float __y) {
+  return __builtin_isgreaterequal(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool isgreaterequal(double __x, double __y) {
+  return __builtin_isgreaterequal(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool isless(float __x, float __y) {
+  return __builtin_isless(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool isless(double __x, double __y) {
+  return __builtin_isless(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool islessequal(float __x, float __y) {
+  return __builtin_islessequal(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool islessequal(double __x, double __y) {
+  return __builtin_islessequal(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool islessgreater(float __x, float __y) {
+  return __builtin_islessgreater(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool islessgreater(double __x, double __y) {
+  return __builtin_islessgreater(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool isnormal(float __x) {
+  return __builtin_isnormal(__x);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool isnormal(double __x) {
+  return __builtin_isnormal(__x);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool isunordered(float __x, float __y) {
+  return __builtin_isunordered(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool isunordered(double __x, double __y) {
+  return __builtin_isunordered(__x, __y);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) float modf(float __x, float *__iptr) {
+  return ::modff(__x, __iptr);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) float pow(float __base, int __iexp) {
+  return ::powif(__base, __iexp);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) double pow(double __base, int __iexp) {
+  return ::powi(__base, __iexp);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) float remquo(float __x, float __y, int *__quo) {
+  return ::remquof(__x, __y, __quo);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) float scalbln(float __x, long int __n) {
+  return ::scalblnf(__x, __n);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) bool signbit(float __x) { return ::__signbitf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) bool signbit(double __x) { return ::__signbit(__x); }
+
+
+
+
+
+
+static __attribute__((device)) inline __attribute__((always_inline)) _Float16 fma(_Float16 __x, _Float16 __y,
+                                      _Float16 __z) {
+  return __builtin_fmaf16(__x, __y, __z);
+}
+static __attribute__((device)) inline __attribute__((always_inline)) _Float16 pow(_Float16 __base, int __iexp) {
+  return __ocml_pown_f16(__base, __iexp);
+}
+# 207 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_cmath.h" 3
+static __attribute__((device)) inline __attribute__((always_inline)) float acos(float __x) { return acosf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float acosh(float __x) { return acoshf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float asin(float __x) { return asinf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float asinh(float __x) { return asinhf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float atan(float __x) { return atanf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float atan2(float __x, float __y) { return atan2f(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float atanh(float __x) { return atanhf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float cbrt(float __x) { return cbrtf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float ceil(float __x) { return ceilf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float copysign(float __x, float __y) { return copysignf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float cos(float __x) { return cosf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float cosh(float __x) { return coshf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float erf(float __x) { return erff(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float erfc(float __x) { return erfcf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float exp(float __x) { return expf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float exp2(float __x) { return exp2f(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float expm1(float __x) { return expm1f(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float fabs(float __x) { return fabsf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float fdim(float __x, float __y) { return fdimf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float floor(float __x) { return floorf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float fmax(float __x, float __y) { return fmaxf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float fmin(float __x, float __y) { return fminf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float fmod(float __x, float __y) { return fmodf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float hypot(float __x, float __y) { return hypotf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) int ilogb(float __x) { return ilogbf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float ldexp(float __x, int __y) { return ldexpf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float lgamma(float __x) { return lgammaf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float log(float __x) { return logf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float log10(float __x) { return log10f(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float log1p(float __x) { return log1pf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float log2(float __x) { return log2f(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float logb(float __x) { return logbf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) long long llrint(float __x) { return llrintf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) long long llround(float __x) { return llroundf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) long lrint(float __x) { return lrintf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) long lround(float __x) { return lroundf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float nearbyint(float __x) { return nearbyintf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float nextafter(float __x, float __y) { return nextafterf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float pow(float __x, float __y) { return powf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float remainder(float __x, float __y) { return remainderf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float rint(float __x) { return rintf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float round(float __x) { return roundf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float scalbn(float __x, int __y) { return scalbnf(__x, __y); }
+static __attribute__((device)) inline __attribute__((always_inline)) float sin(float __x) { return sinf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float sinh(float __x) { return sinhf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float sqrt(float __x) { return sqrtf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float tan(float __x) { return tanf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float tanh(float __x) { return tanhf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float tgamma(float __x) { return tgammaf(__x); }
+static __attribute__((device)) inline __attribute__((always_inline)) float trunc(float __x) { return truncf(__x); }
+# 270 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_cmath.h" 3
+template <bool __B, class __T = void> struct __hip_enable_if {};
+
+template <class __T> struct __hip_enable_if<true, __T> { typedef __T type; };
+
+namespace __hip {
+template <class _Tp> struct is_integral {
+  enum { value = 0 };
+};
+template <> struct is_integral<bool> {
+  enum { value = 1 };
+};
+template <> struct is_integral<char> {
+  enum { value = 1 };
+};
+template <> struct is_integral<signed char> {
+  enum { value = 1 };
+};
+template <> struct is_integral<unsigned char> {
+  enum { value = 1 };
+};
+template <> struct is_integral<wchar_t> {
+  enum { value = 1 };
+};
+template <> struct is_integral<short> {
+  enum { value = 1 };
+};
+template <> struct is_integral<unsigned short> {
+  enum { value = 1 };
+};
+template <> struct is_integral<int> {
+  enum { value = 1 };
+};
+template <> struct is_integral<unsigned int> {
+  enum { value = 1 };
+};
+template <> struct is_integral<long> {
+  enum { value = 1 };
+};
+template <> struct is_integral<unsigned long> {
+  enum { value = 1 };
+};
+template <> struct is_integral<long long> {
+  enum { value = 1 };
+};
+template <> struct is_integral<unsigned long long> {
+  enum { value = 1 };
+};
+
+
+template <class _Tp> struct is_arithmetic {
+  enum { value = 0 };
+};
+template <> struct is_arithmetic<bool> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<char> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<signed char> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<unsigned char> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<wchar_t> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<short> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<unsigned short> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<int> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<unsigned int> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<long> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<unsigned long> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<long long> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<unsigned long long> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<float> {
+  enum { value = 1 };
+};
+template <> struct is_arithmetic<double> {
+  enum { value = 1 };
+};
+
+struct true_type {
+  static const __attribute__((constant)) bool value = true;
+};
+struct false_type {
+  static const __attribute__((constant)) bool value = false;
+};
+
+template <typename __T, typename __U> struct is_same : public false_type {};
+template <typename __T> struct is_same<__T, __T> : public true_type {};
+
+template <typename __T> struct add_rvalue_reference { typedef __T &&type; };
+
+template <typename __T> typename add_rvalue_reference<__T>::type declval();
+
+
+
+
+template <class _Tp> struct __numeric_type {
+  static void __test(...);
+  static _Float16 __test(_Float16);
+  static float __test(float);
+  static double __test(char);
+  static double __test(int);
+  static double __test(unsigned);
+  static double __test(long);
+  static double __test(unsigned long);
+  static double __test(long long);
+  static double __test(unsigned long long);
+  static double __test(double);
+
+  static double __test(long double);
+
+  template <typename _U>
+  static auto __test_impl(int) -> decltype(__test(declval<_U>()));
+
+  template <typename _U> static void __test_impl(...);
+
+  typedef decltype(__test_impl<_Tp>(0)) type;
+  static const bool value = !is_same<type, void>::value;
+};
+
+template <> struct __numeric_type<void> { static const bool value = true; };
+
+template <class _A1, class _A2 = void, class _A3 = void,
+          bool = __numeric_type<_A1>::value &&__numeric_type<_A2>::value
+              &&__numeric_type<_A3>::value>
+class __promote_imp {
+public:
+  static const bool value = false;
+};
+
+template <class _A1, class _A2, class _A3>
+class __promote_imp<_A1, _A2, _A3, true> {
+private:
+  typedef typename __promote_imp<_A1>::type __type1;
+  typedef typename __promote_imp<_A2>::type __type2;
+  typedef typename __promote_imp<_A3>::type __type3;
+
+public:
+  typedef decltype(__type1() + __type2() + __type3()) type;
+  static const bool value = true;
+};
+
+template <class _A1, class _A2> class __promote_imp<_A1, _A2, void, true> {
+private:
+  typedef typename __promote_imp<_A1>::type __type1;
+  typedef typename __promote_imp<_A2>::type __type2;
+
+public:
+  typedef decltype(__type1() + __type2()) type;
+  static const bool value = true;
+};
+
+template <class _A1> class __promote_imp<_A1, void, void, true> {
+public:
+  typedef typename __numeric_type<_A1>::type type;
+  static const bool value = true;
+};
+
+template <class _A1, class _A2 = void, class _A3 = void>
+class __promote : public __promote_imp<_A1, _A2, _A3> {};
+
+}
+# 488 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_cmath.h" 3
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type acos(__T __x) { return ::acos((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type acosh(__T __x) { return ::acosh((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type asin(__T __x) { return ::asin((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type asinh(__T __x) { return ::asinh((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type atan(__T __x) { return ::atan((double)__x); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type atan2(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return atan2((__result_type)__x, (__result_type)__y); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type atanh(__T __x) { return ::atanh((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type cbrt(__T __x) { return ::cbrt((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type ceil(__T __x) { return ::ceil((double)__x); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type copysign(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return copysign((__result_type)__x, (__result_type)__y); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type cos(__T __x) { return ::cos((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type cosh(__T __x) { return ::cosh((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type erf(__T __x) { return ::erf((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type erfc(__T __x) { return ::erfc((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type exp(__T __x) { return ::exp((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type exp2(__T __x) { return ::exp2((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type expm1(__T __x) { return ::expm1((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type fabs(__T __x) { return ::fabs((double)__x); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type fdim(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return fdim((__result_type)__x, (__result_type)__y); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type floor(__T __x) { return ::floor((double)__x); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type fmax(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return fmax((__result_type)__x, (__result_type)__y); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type fmin(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return fmin((__result_type)__x, (__result_type)__y); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type fmod(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return fmod((__result_type)__x, (__result_type)__y); }
+
+
+
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type hypot(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return hypot((__result_type)__x, (__result_type)__y); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, int>::type ilogb(__T __x) { return ::ilogb((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, bool>::type isfinite(__T __x) { return ::isfinite((double)__x); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type isgreater(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return isgreater((__result_type)__x, (__result_type)__y); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type isgreaterequal(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return isgreaterequal((__result_type)__x, (__result_type)__y); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, bool>::type isinf(__T __x) { return ::isinf((double)__x); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type isless(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return isless((__result_type)__x, (__result_type)__y); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type islessequal(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return islessequal((__result_type)__x, (__result_type)__y); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type islessgreater(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return islessgreater((__result_type)__x, (__result_type)__y); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, bool>::type isnan(__T __x) { return ::isnan((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, bool>::type isnormal(__T __x) { return ::isnormal((double)__x); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type isunordered(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return isunordered((__result_type)__x, (__result_type)__y); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type lgamma(__T __x) { return ::lgamma((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type log(__T __x) { return ::log((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type log10(__T __x) { return ::log10((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type log1p(__T __x) { return ::log1p((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type log2(__T __x) { return ::log2((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type logb(__T __x) { return ::logb((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, long long>::type llrint(__T __x) { return ::llrint((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, long long>::type llround(__T __x) { return ::llround((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, long>::type lrint(__T __x) { return ::lrint((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, long>::type lround(__T __x) { return ::lround((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type nearbyint(__T __x) { return ::nearbyint((double)__x); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type nextafter(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return nextafter((__result_type)__x, (__result_type)__y); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type pow(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return pow((__result_type)__x, (__result_type)__y); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type remainder(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return remainder((__result_type)__x, (__result_type)__y); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type rint(__T __x) { return ::rint((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type round(__T __x) { return ::round((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, bool>::type signbit(__T __x) { return ::signbit((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type sin(__T __x) { return ::sin((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type sinh(__T __x) { return ::sinh((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type sqrt(__T __x) { return ::sqrt((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type tan(__T __x) { return ::tan((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type tanh(__T __x) { return ::tanh((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type tgamma(__T __x) { return ::tgamma((double)__x); }
+template <typename __T> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type trunc(__T __x) { return ::trunc((double)__x); }
+
+
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type max(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return max((__result_type)__x, (__result_type)__y); }
+template <typename __T1, typename __T2> static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if< __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value, typename __hip::__promote<__T1, __T2>::type>::type min(__T1 __x, __T2 __y) { typedef typename __hip::__promote<__T1, __T2>::type __result_type; return min((__result_type)__x, (__result_type)__y); }
+
+
+
+template <typename __T1, typename __T2, typename __T3>
+static __attribute__((device)) inline __attribute__((always_inline)) typename __hip_enable_if<
+    __hip::is_arithmetic<__T1>::value && __hip::is_arithmetic<__T2>::value &&
+        __hip::is_arithmetic<__T3>::value,
+    typename __hip::__promote<__T1, __T2, __T3>::type>::type
+fma(__T1 __x, __T2 __y, __T3 __z) {
+  typedef typename __hip::__promote<__T1, __T2, __T3>::type __result_type;
+  return ::fma((__result_type)__x, (__result_type)__y, (__result_type)__z);
+}
+# 578 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_cmath.h" 3
+template <typename __T>
+static __attribute__((device)) inline __attribute__((always_inline))
+    typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type
+    frexp(__T __x, int *__exp) {
+  return ::frexp((double)__x, __exp);
+}
+
+template <typename __T>
+static __attribute__((device)) inline __attribute__((always_inline))
+    typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type
+    ldexp(__T __x, int __exp) {
+  return ::ldexp((double)__x, __exp);
+}
+
+template <typename __T>
+static __attribute__((device)) inline __attribute__((always_inline))
+    typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type
+    modf(__T __x, double *__exp) {
+  return ::modf((double)__x, __exp);
+}
+
+
+template <typename __T1, typename __T2>
+static __attribute__((device)) inline __attribute__((always_inline))
+    typename __hip_enable_if<__hip::is_arithmetic<__T1>::value &&
+                                 __hip::is_arithmetic<__T2>::value,
+                             typename __hip::__promote<__T1, __T2>::type>::type
+    remquo(__T1 __x, __T2 __y, int *__quo) {
+  typedef typename __hip::__promote<__T1, __T2>::type __result_type;
+  return ::remquo((__result_type)__x, (__result_type)__y, __quo);
+}
+# 620 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_cmath.h" 3
+template <typename __T>
+static __attribute__((device)) inline __attribute__((always_inline))
+    typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type
+    scalbln(__T __x, long int __exp) {
+  return ::scalbln((double)__x, __exp);
+}
+
+template <typename __T>
+static __attribute__((device)) inline __attribute__((always_inline))
+    typename __hip_enable_if<__hip::is_integral<__T>::value, double>::type
+    scalbn(__T __x, int __exp) {
+  return ::scalbn((double)__x, __exp);
+}
+# 141 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__clang_hip_runtime_wrapper.h" 2 3
+# 2 "<built-in>" 2
+# 1 "gemm_a8w8_mxfp8_kernel.cc" 2
+# 1 "/root/workspace/aiter/csrc/include/opus/hip_minimal.hpp" 1
+# 60 "/root/workspace/aiter/csrc/include/opus/hip_minimal.hpp"
+# 1 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/cstddef" 1 3
+# 43 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/cstddef" 3
+
+
+
+
+
+
+# 1 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/c++config.h" 1 3
+# 296 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/c++config.h" 3
+namespace std
+{
+  typedef long unsigned int size_t;
+  typedef long int ptrdiff_t;
+
+
+  typedef decltype(nullptr) nullptr_t;
+
+
+#pragma GCC visibility push(default)
+
+
+  extern "C++" __attribute__ ((__noreturn__, __always_inline__))
+  inline void __terminate() noexcept
+  {
+    void terminate() noexcept __attribute__ ((__noreturn__));
+    terminate();
+  }
+#pragma GCC visibility pop
+}
+# 329 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/c++config.h" 3
+namespace std
+{
+  inline namespace __cxx11 __attribute__((__abi_tag__ ("cxx11"))) { }
+}
+namespace __gnu_cxx
+{
+  inline namespace __cxx11 __attribute__((__abi_tag__ ("cxx11"))) { }
+}
+# 508 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/c++config.h" 3
+namespace std
+{
+#pragma GCC visibility push(default)
+
+
+
+
+  constexpr inline bool
+  __is_constant_evaluated() noexcept
+  {
+
+
+
+
+
+    return __builtin_is_constant_evaluated();
+
+
+
+  }
+#pragma GCC visibility pop
+}
+# 655 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/c++config.h" 3
+# 1 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/os_defines.h" 1 3
+# 39 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/os_defines.h" 3
+# 1 "/usr/include/features.h" 1 3 4
+# 392 "/usr/include/features.h" 3 4
+# 1 "/usr/include/features-time64.h" 1 3 4
+# 20 "/usr/include/features-time64.h" 3 4
+# 1 "/usr/include/x86_64-linux-gnu/bits/wordsize.h" 1 3 4
+# 21 "/usr/include/features-time64.h" 2 3 4
+# 1 "/usr/include/x86_64-linux-gnu/bits/timesize.h" 1 3 4
+# 19 "/usr/include/x86_64-linux-gnu/bits/timesize.h" 3 4
+# 1 "/usr/include/x86_64-linux-gnu/bits/wordsize.h" 1 3 4
+# 20 "/usr/include/x86_64-linux-gnu/bits/timesize.h" 2 3 4
+# 22 "/usr/include/features-time64.h" 2 3 4
+# 393 "/usr/include/features.h" 2 3 4
+# 464 "/usr/include/features.h" 3 4
+# 1 "/usr/include/stdc-predef.h" 1 3 4
+# 465 "/usr/include/features.h" 2 3 4
+# 486 "/usr/include/features.h" 3 4
+# 1 "/usr/include/x86_64-linux-gnu/sys/cdefs.h" 1 3 4
+# 559 "/usr/include/x86_64-linux-gnu/sys/cdefs.h" 3 4
+# 1 "/usr/include/x86_64-linux-gnu/bits/wordsize.h" 1 3 4
+# 560 "/usr/include/x86_64-linux-gnu/sys/cdefs.h" 2 3 4
+# 1 "/usr/include/x86_64-linux-gnu/bits/long-double.h" 1 3 4
+# 561 "/usr/include/x86_64-linux-gnu/sys/cdefs.h" 2 3 4
+# 487 "/usr/include/features.h" 2 3 4
+# 510 "/usr/include/features.h" 3 4
+# 1 "/usr/include/x86_64-linux-gnu/gnu/stubs.h" 1 3 4
+# 10 "/usr/include/x86_64-linux-gnu/gnu/stubs.h" 3 4
+# 1 "/usr/include/x86_64-linux-gnu/gnu/stubs-64.h" 1 3 4
+# 11 "/usr/include/x86_64-linux-gnu/gnu/stubs.h" 2 3 4
+# 511 "/usr/include/features.h" 2 3 4
+# 40 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/os_defines.h" 2 3
+# 656 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/c++config.h" 2 3
+
+
+# 1 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/cpu_defines.h" 1 3
+# 659 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/c++config.h" 2 3
+# 841 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/c++config.h" 3
+# 1 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/pstl/pstl_config.h" 1 3
+# 842 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/x86_64-linux-gnu/c++/12/bits/c++config.h" 2 3
+# 50 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/cstddef" 2 3
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 1 3
+# 84 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 3
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_header_macro.h" 1 3
+# 85 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 2 3
+
+
+
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_ptrdiff_t.h" 1 3
+# 18 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_ptrdiff_t.h" 3
+typedef long int ptrdiff_t;
+# 89 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 2 3
+
+
+
+
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_size_t.h" 1 3
+# 18 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_size_t.h" 3
+typedef long unsigned int size_t;
+# 94 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 2 3
+# 103 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 3
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_wchar_t.h" 1 3
+# 104 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 2 3
+
+
+
+
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_null.h" 1 3
+# 109 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 2 3
+
+
+
+
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_nullptr_t.h" 1 3
+# 114 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 2 3
+# 123 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 3
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_max_align_t.h" 1 3
+# 19 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_max_align_t.h" 3
+typedef struct {
+  long long __clang_max_align_nonce1
+      __attribute__((__aligned__(__alignof__(long long))));
+  long double __clang_max_align_nonce2
+      __attribute__((__aligned__(__alignof__(long double))));
+} max_align_t;
+# 124 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 2 3
+
+
+
+
+# 1 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/__stddef_offsetof.h" 1 3
+# 129 "/opt/rocm-7.0.0/lib/llvm/lib/clang/20/include/stddef.h" 2 3
+# 51 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/cstddef" 2 3
+
+extern "C++"
+{
+
+namespace std
+{
+
+  using ::max_align_t;
+}
+
+
+
+namespace std
+{
+
+
+
+
+  enum class byte : unsigned char {};
+
+  template<typename _IntegerType> struct __byte_operand { };
+  template<> struct __byte_operand<bool> { using __type = byte; };
+  template<> struct __byte_operand<char> { using __type = byte; };
+  template<> struct __byte_operand<signed char> { using __type = byte; };
+  template<> struct __byte_operand<unsigned char> { using __type = byte; };
+  template<> struct __byte_operand<wchar_t> { using __type = byte; };
+
+
+
+  template<> struct __byte_operand<char16_t> { using __type = byte; };
+  template<> struct __byte_operand<char32_t> { using __type = byte; };
+  template<> struct __byte_operand<short> { using __type = byte; };
+  template<> struct __byte_operand<unsigned short> { using __type = byte; };
+  template<> struct __byte_operand<int> { using __type = byte; };
+  template<> struct __byte_operand<unsigned int> { using __type = byte; };
+  template<> struct __byte_operand<long> { using __type = byte; };
+  template<> struct __byte_operand<unsigned long> { using __type = byte; };
+  template<> struct __byte_operand<long long> { using __type = byte; };
+  template<> struct __byte_operand<unsigned long long> { using __type = byte; };
+# 108 "/usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/cstddef" 3
+  template<typename _IntegerType>
+    struct __byte_operand<const _IntegerType>
+    : __byte_operand<_IntegerType> { };
+  template<typename _IntegerType>
+    struct __byte_operand<volatile _IntegerType>
+    : __byte_operand<_IntegerType> { };
+  template<typename _IntegerType>
+    struct __byte_operand<const volatile _IntegerType>
+    : __byte_operand<_IntegerType> { };
+
+  template<typename _IntegerType>
+    using __byte_op_t = typename __byte_operand<_IntegerType>::__type;
+
+  template<typename _IntegerType>
+    [[__gnu__::__always_inline__]]
+    constexpr __byte_op_t<_IntegerType>
+    operator<<(byte __b, _IntegerType __shift) noexcept
+    { return (byte)(unsigned char)((unsigned)__b << __shift); }
+
+  template<typename _IntegerType>
+    [[__gnu__::__always_inline__]]
+    constexpr __byte_op_t<_IntegerType>
+    operator>>(byte __b, _IntegerType __shift) noexcept
+    { return (byte)(unsigned char)((unsigned)__b >> __shift); }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte
+  operator|(byte __l, byte __r) noexcept
+  { return (byte)(unsigned char)((unsigned)__l | (unsigned)__r); }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte
+  operator&(byte __l, byte __r) noexcept
+  { return (byte)(unsigned char)((unsigned)__l & (unsigned)__r); }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte
+  operator^(byte __l, byte __r) noexcept
+  { return (byte)(unsigned char)((unsigned)__l ^ (unsigned)__r); }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte
+  operator~(byte __b) noexcept
+  { return (byte)(unsigned char)~(unsigned)__b; }
+
+  template<typename _IntegerType>
+    [[__gnu__::__always_inline__]]
+    constexpr __byte_op_t<_IntegerType>&
+    operator<<=(byte& __b, _IntegerType __shift) noexcept
+    { return __b = __b << __shift; }
+
+  template<typename _IntegerType>
+    [[__gnu__::__always_inline__]]
+    constexpr __byte_op_t<_IntegerType>&
+    operator>>=(byte& __b, _IntegerType __shift) noexcept
+    { return __b = __b >> __shift; }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte&
+  operator|=(byte& __l, byte __r) noexcept
+  { return __l = __l | __r; }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte&
+  operator&=(byte& __l, byte __r) noexcept
+  { return __l = __l & __r; }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte&
+  operator^=(byte& __l, byte __r) noexcept
+  { return __l = __l ^ __r; }
+
+  template<typename _IntegerType>
+    [[nodiscard,__gnu__::__always_inline__]]
+    constexpr _IntegerType
+    to_integer(__byte_op_t<_IntegerType> __b) noexcept
+    { return _IntegerType(__b); }
+
+
+}
+
+}
+# 61 "/root/workspace/aiter/csrc/include/opus/hip_minimal.hpp" 2
+
+typedef int hipError_t;
+typedef void* hipStream_t;
+
+
+struct dim3 {
+    unsigned int x, y, z;
+    constexpr dim3(unsigned int _x = 1, unsigned int _y = 1, unsigned int _z = 1)
+        : x(_x), y(_y), z(_z) {}
+};
+
+
+extern "C" hipError_t hipGetLastError();
+extern "C" hipError_t hipDeviceSynchronize();
+extern "C" const char* hipGetErrorString(hipError_t error);
+
+
+extern "C" hipError_t hipMalloc(void** ptr, size_t size);
+extern "C" hipError_t hipFree(void* ptr);
+extern "C" hipError_t hipMemset(void* dst, int value, size_t sizeBytes);
+enum hipMemcpyKind { hipMemcpyHostToHost = 0, hipMemcpyHostToDevice = 1, hipMemcpyDeviceToHost = 2, hipMemcpyDeviceToDevice = 3, hipMemcpyDefault = 4 };
+extern "C" hipError_t hipMemcpy(void* dst, const void* src, size_t sizeBytes, hipMemcpyKind kind);
+template <typename T> inline hipError_t hipMalloc(T** ptr, size_t size) { return hipMalloc(reinterpret_cast<void**>(ptr), size); }
+
+
+typedef void* hipEvent_t;
+extern "C" hipError_t hipEventCreate(hipEvent_t* event);
+extern "C" hipError_t hipEventDestroy(hipEvent_t event);
+extern "C" hipError_t hipEventRecord(hipEvent_t event, hipStream_t stream = nullptr);
+extern "C" hipError_t hipEventSynchronize(hipEvent_t event);
+extern "C" hipError_t hipEventElapsedTime(float* ms, hipEvent_t start, hipEvent_t stop);
+
+
+extern "C" hipError_t __hipPushCallConfiguration(dim3 gridDim, dim3 blockDim, size_t sharedMem = 0, hipStream_t stream = nullptr);
+extern "C" hipError_t __hipPopCallConfiguration(dim3* gridDim, dim3* blockDim, size_t* sharedMem, hipStream_t* stream);
+extern "C" hipError_t hipLaunchKernel(const void* function_address, dim3 numBlocks, dim3 dimBlocks, void** args, size_t sharedMemBytes, hipStream_t stream);
+# 2 "gemm_a8w8_mxfp8_kernel.cc" 2
+
+# 1 "./gemm_a8w8_mxfp8_common.h" 1
+
+
+
+struct opus_gemm_kargs {
+    const void* __restrict__ ptr_a;
+    const void* __restrict__ ptr_b;
+    void* __restrict__ ptr_c;
+    int m;
+    int n;
+    int k;
+    int batch;
+    int stride_a;
+    int stride_b;
+    int stride_c;
+    int stride_a_batch;
+    int stride_b_batch;
+    int stride_c_batch;
+
+    const void* __restrict__ ptr_sfa;
+    const void* __restrict__ ptr_sfb;
+    int stride_sfa;
+    int stride_sfb;
+    int stride_sfa_batch;
+    int stride_sfb_batch;
+};
+
+
+template<
+    int BLOCK_M_ = 256,
+    int BLOCK_N_ = 256,
+    int BLOCK_K_ = 128,
+    int GROUP_M_ = 1,
+    int GROUP_N_ = 1,
+    int GROUP_K_ = 32>
+struct gemm_a8w8_mxfp8_traits {
+    static constexpr int BLOCK_SIZE = 512;
+    static constexpr int WARP_SIZE = 64;
+
+    static constexpr int B_M = BLOCK_M_;
+    static constexpr int B_N = BLOCK_N_;
+    static constexpr int B_K = BLOCK_K_;
+
+    static constexpr int T_M = 4;
+    static constexpr int T_N = 2;
+    static constexpr int T_K = 1;
+
+    static constexpr int W_M = 16;
+    static constexpr int W_N = 16;
+    static constexpr int W_K = 32;
+
+    static constexpr int HALF_B_M = B_M / 2;
+    static constexpr int HALF_B_N = B_N / 2;
+
+    static_assert(BLOCK_SIZE / WARP_SIZE == T_M * T_N * T_K);
+    static_assert(T_K == 1);
+    static_assert(HALF_B_M % (W_M * T_M) == 0);
+    static_assert(HALF_B_N % (W_N * T_N) == 0);
+    static_assert(B_K % (W_K * T_K) == 0);
+
+    static constexpr int E_M = HALF_B_M / (W_M * T_M);
+    static constexpr int E_N = HALF_B_N / (W_N * T_N);
+    static constexpr int E_K = B_K / (W_K * T_K);
+
+
+
+    static constexpr int ELEM_C = W_M * W_N / WARP_SIZE;
+
+    static constexpr int VEC_A_GLOBAL = 16;
+    static constexpr int VEC_B_GLOBAL = 16;
+    static constexpr int VEC_A = 8;
+    static constexpr int VEC_B = 8;
+    static constexpr int VEC_C = 4;
+
+    static constexpr int GROUP_M = GROUP_M_;
+    static constexpr int GROUP_N = GROUP_N_;
+    static constexpr int GROUP_K = GROUP_K_;
+
+    static_assert(W_K == GROUP_K, "W_K must equal GROUP_K for per-group post-scaling");
+    static constexpr int NUM_KGROUPS = B_K / GROUP_K;
+
+    static constexpr int smem_linear_wave = WARP_SIZE * 16;
+    static constexpr int smem_sub = smem_linear_wave / B_K;
+    static constexpr int smem_m_rep = HALF_B_M / smem_sub;
+    static constexpr int smem_n_rep = HALF_B_N / smem_sub;
+    static constexpr int smem_padding = 32;
+
+    static constexpr int a_buffer_load_insts = HALF_B_M * B_K / (BLOCK_SIZE * VEC_A_GLOBAL);
+    static constexpr int b_buffer_load_insts = HALF_B_N * B_K / (BLOCK_SIZE * VEC_B_GLOBAL);
+    static constexpr int a_ds_read_insts = (E_M * E_K * W_M * W_K) / (WARP_SIZE * VEC_A);
+    static constexpr int b_ds_read_insts = (E_N * E_K * W_N * W_K) / (WARP_SIZE * VEC_B);
+    static constexpr int sfa_buffer_load_insts = E_M * NUM_KGROUPS;
+
+
+    static constexpr int sfb_buffer_load_insts = E_N * ELEM_C * NUM_KGROUPS;
+};
+
+__attribute__((host)) __attribute__((device)) inline int ceil_div(int a, int b) {
+    return (a + b - 1) / b;
+}
+# 4 "gemm_a8w8_mxfp8_kernel.cc" 2
+
+using GemmTraits = gemm_a8w8_mxfp8_traits<>;
+
+
+template<typename Traits>
+__attribute__((global)) void gemm_a8w8_mxfp8_kernel(opus_gemm_kargs kargs) {}
+
+template __attribute__((global)) void gemm_a8w8_mxfp8_kernel<GemmTraits>(opus_gemm_kargs);
