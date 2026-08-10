@@ -1,14 +1,15 @@
 # OPUS GEMM Split-K 与接口重构设计
 
-> 状态：设计提案，尚未实施；已合并第二轮方案评审结论
+> 状态：设计提案，尚未实施；已合并第三轮方案评审与上游 PR 实证
 >
 > 基线：当前工作区 `35696023`
 >
-> 参考实现：[ROCm/aiter PR #4246 - gfx1250 opus gemm splitk fuse](https://github.com/ROCm/aiter/pull/4246)
+> 上游参考（截至 2026-08-10 均为 open）：
 >
-> 参考版本：`86d1eba4c2b9de9649fe36228b3b8bba578ab0bd`
-
-需求中提到的 Zoe 版本目前没有可定位的 branch/PR。本文默认采用 PR #4246 已验证的“Torch Tensor拥有 workspace、C++只消费 direct pointer”方向；后续若补充 Zoe 链接，只需比较 allocator、graph lifetime和 ABI取舍，不应重新引入第二套 runtime workspace owner。
+> - [ROCm/aiter PR #4246 - gfx1250 opus gemm splitk fuse](https://github.com/ROCm/aiter/pull/4246)：任务 A 的直接参考。workspace 所有权切换始于 commit `4ac1fa86ea452a4289aa0751aa07e8d306e3f3ed`，按 kid 的实际 dtype/shape 修正容量并删除 prewarm 的版本为 `86d1eba4c2b9de9649fe36228b3b8bba578ab0bd`。
+> - [ROCm/aiter PR #4320 - Add opus fp8 mxscale BMM kernels for gfx950](https://github.com/ROCm/aiter/pull/4320)：需求中“Zoe 那个”，任务 B 的分层参考；本文核验的 head 为 `ec93aadf2596052eac7cb6f3ddc01993fb1faa4c`。
+>
+> 两个 PR 解决的问题不同。#4246 还包含可选 fused pipeline；#4320 的 Python 选核/C++ kid dispatch 值得复用，但其生成 launcher 仍有 raw HIP split-K workspace grow，不能作为任务 A 的完成形态。
 
 ## 1. 任务拆分
 
@@ -23,6 +24,8 @@
 - 删除 raw HIP allocator、per-stream registry、host/device双 handle和 graph prewarm。
 - 不修改现有 kernel 数值流水线，不在本任务新增 fused kernel。
 
+#4246 只把 gfx1250 路径切成 Torch workspace；本任务要把同一所有权模型推广到当前树已有的 gfx942、gfx950、gfx1250 三套 a16w16 two-stage split-K。#4246 的 `_fuse` pipeline不在本任务内，且 fuse仍保留 partial workspace，只是省掉独立 reduce launch。
+
 任务 A 不立即删除 C++ lookup/heuristic源码，但它依赖一个最小的 Python `LaunchConfig` 解析前置：Python必须在分配 workspace 前知道最终 kid。旧 C++ selector暂时只用于 differential test，不再作为 production兼容 fallback。
 
 ### 任务 B：重构 OPUS GEMM 接口
@@ -33,6 +36,8 @@
 - C++ 仅负责运行时安全检查、arch 校验、`kid -> launcher` dispatch、kargs 构造和 kernel launch。
 - a16w16、a8w8、blockscale 等 kernel family 使用各自的低层 ABI，不再共用一个 mega entry。
 
+#4320 已展示可复用的基本形态：Python做 heuristic和 tuned-kid shape gate，`opus_bmm.cu` 做公共安全检查及 kid table dispatch。本文复用这种职责边界，但不照搬其 unknown-kid默认回退、raw workspace grow或单文件 heuristic布局。
+
 ### 可选任务 C：gfx1250 fused split-K kernel
 
 PR #4246 的标题是 fused split-K，但原始需求明确提到的是“workspace 开辟切换到 torch”。除非需求方另外确认要新增 fused kernel，否则 fused pipeline不属于任务 A/B 的必做范围，应单独立项。
@@ -41,7 +46,7 @@ fused split-K 消除的是独立 reduce kernel，不是 workspace：非最后 sp
 
 ### 公共前置和真实依赖
 
-两个必做任务依赖一份中立 `KernelSpec` 和一个 Python `resolve_launch_config()`。不能让任务 A 在 `gemm_op_a16w16.py` 增加 kid-range/workspace 特判，同时任务 B 又重新设计 metadata。
+两个必做任务依赖同一份权威 `KernelSpec` 投影和一个 Python `resolve_launch_config()`。不能让任务 A 在 `gemm_op_a16w16.py` 增加 kid-range/workspace 特判，同时任务 B 又重新设计 metadata。
 
 任务 A 也不能在所有路径上完全独立于选核逻辑：当前 CSV miss路径进入 C++ 后才通过 heuristic得到 kid；Python事前不知道 workspace dtype、tile和容量。完整迁移只能从以下两种方案中选择：
 
@@ -51,7 +56,7 @@ fused split-K 消除的是独立 reduce kernel，不是 workspace：非最后 sp
 建议依赖关系如下：
 
 ```text
-PR0：neutral KernelSpec + Python selector（旧 C++ selector仍保留）
+PR0：authoritative KernelSpec query + Python selector（旧 C++ selector仍保留）
                               │
                               ▼
 任务 A：workspace Torch 化、direct ptr、删除 registry/prewarm
@@ -157,15 +162,47 @@ main kernel [-> separate reduce kernel]
 
 C++ 中仍保留防止非法 launch 或越界的检查；“C++ 只做 dispatch”不代表移除安全检查。
 
+### 3.3 #4320 可复用的模式与不可照搬的部分
+
+#4320 新增的 mxscale BMM 与本方案目标的对照如下：
+
+| #4320 已实现 | 本方案如何使用 |
+|---|---|
+| `bmm_op.py` 在 Python执行 heuristic | 作为任务 B 将三架构 GEMM heuristic迁出 C++ 的直接结构参考。 |
+| Python从 `csrc.opus_gemm.opus_gemm_common` 读取 `m_align`，不再手写 kid allowlist | 证明安装/JIT形态下可以复用现有 kernel metadata；本方案进一步提供稳定、只读的 `KernelSpec` 查询层。 |
+| tuned kid不满足 `m_align` 时将 `kernelId` 和 `splitK` 一起置空，再走 heuristic | 原样吸收“tuned配置原子失效”规则；不能把旧 tuned split-K带给新 heuristic kid。 |
+| `opus_bmm.cu` 做 dtype/arch安全检查和一次 kid table lookup | 作为 family-specific C++ launch入口的参考。 |
+| generated kid -> launcher map | 与必须保留的 `opus_gemm_a16w16_tune_lookup.h` 同类；后续统一使用 `*_kid_dispatch` 命名。 |
+
+以下细节不能照搬：
+
+- #4320 的 `opus_bmm_a8w8_mxscale_tune_dispatch()` 对 unknown kid静默回退到默认 kid。显式 kid是调试、tuner和可复现性接口，目标 GEMM/BMM launch binding都应严格报错；只有 Python selector可以有可观测的 fallback。
+- #4320 的顶层 `opus_bmm.cu` 没有 workspace参数，不代表整条路径没有 allocator。其 `gen_instances_gfx950.py` 生成的 mxscale BMM split-K/fused launcher仍调用 `opus_splitk_ws_get()`、`hipMalloc()`、`hipFree()`，并在 graph capture时禁止 grow。因此 #4320 不是任务 A 的 workspace参考。
+- #4320 的零参数 `functools.cache` 只缓存一份静态 `kid -> m_align` 字典，不等于允许对动态 selector结果或 Tensor workspace使用无界 cache。
+- #4320 只有一个 gfx950 BMM family，把 heuristic放在单个 op文件尚可；三架构 a16w16仍应拆成共享 selector加 per-arch heuristic模块。
+
+如果 #4320 在任务 A 前合入，必须明确选择范围：要维持“OPUS 中无 raw workspace allocator”的 Definition of Done，就要把它新增的 gfx950 mxscale BMM split-K/fused launcher也纳入 Torch workspace迁移；若本期只承诺当前 a16w16，必须在 PR描述和检查命令中显式排除 BMM，不能误报全模块已经清理完毕。
+
 ## 4. 公共数据模型
 
-### 4.1 中立事实源
+### 4.1 权威事实源与稳定 runtime 查询层
 
-建议新增 `aiter/ops/opus/_kernel_catalog.py`。该文件必须是纯 Python 数据模块，不导入 `torch`、`aiter` 顶层包或 JIT extension，使 runtime 和 codegen 都可以消费同一事实源。
+不再新增一份承载 kernel数据的 `aiter/ops/opus/_kernel_catalog.py`。本树已经把所有实例登记在 `csrc/opus_gemm/opus_gemm_common.py`，codegen和 tuner都直接消费它；把几百个 kid迁到 runtime目录只会制造一次高风险搬家，迁移期间还会出现两个权威源。
 
-不建议让 `aiter/ops/opus` 在 runtime反向 import `csrc/opus_gemm/opus_gemm_common.py`。后者当前是 tuner/codegen的同目录模块；从源码 checkout中可以人为修改 `sys.path` 导入，并不代表它适合作为安装后 runtime API。迁移期应由 `csrc/opus_gemm/opus_gemm_common.py` 适配或 re-export中立 catalog，而不是反向依赖。
+运行时读取 `csrc` 在本项目中是受支持的安装契约，而不是仅在源码 checkout中碰巧可用：
 
-codegen也不能用普通的 `import aiter.ops.opus._kernel_catalog`，因为 Python会先执行 `aiter/__init__.py` 和 `aiter/ops/opus/__init__.py`，可能触发 torch、arch探测或 JIT副作用。应在 `csrc/opus_gemm/codegen/common.py` 提供一个按文件路径加载该纯数据模块的窄 helper（或将其放入未来独立的、无副作用 neutral package）；CI必须能在无 GPU、未加载 aiter extension的进程中读取 catalog并生成实例。
+- `aiter/__init__.py` 在导入 OPUS 前先导入 `aiter.jit.core`；`core.py` 将 `AITER_META_DIR` 放入 `sys.path`。
+- editable/source模式的 `AITER_META_DIR` 是仓库根；非 editable安装时 `setup.py:prepare_packaging()` 将整个 `csrc` 复制到 `aiter_meta/csrc`，`MANIFEST.in` 包含 `aiter_meta`。
+- 仓内 attention、sampling和 AOT模块已经使用 `from csrc...`；#4320 的 `bmm_op.py` 也用同一路径读取 `opus_gemm_common.py`。
+
+因此采用“一个权威源、两个接口面”：
+
+1. `csrc/opus_gemm/opus_gemm_common.py` 继续保存 codegen authoring record和全部实例登记，并新增稳定查询函数 `get_kernel_spec(arch, family, kid)`、`iter_kernel_specs(...)` 与 `catalog_fingerprint()`。
+2. 现有 `OpusGemmInstance` 是可变的 codegen对象，且部分 family会在构造后附加属性，不能直接暴露给 runtime。查询函数必须返回下面的 frozen `KernelSpec` 投影；构建投影时若 `D_ACC/D_WS/D_OUT` 或 capability含糊，应立即失败，不能靠默认值猜。
+3. 新增 `aiter/ops/opus/_catalog.py` 作为很薄的 runtime facade。它先显式导入 `aiter.jit.core` 以建立 `AITER_META_DIR`，再导入上述查询函数；facade不保存或重写任何 kid数据，也不泄露可变 instance dict。
+4. codegen和 tuner继续直接导入 `opus_gemm_common.py`，不反向 import `aiter`，因此无 GPU的生成流程不会触发包级 arch/JIT副作用。
+
+CI必须分别验证 source、editable install和 wheel install三种形态：在不加载 OPUS extension、无需 GPU的子进程中导入 `_catalog.py`，读取同一个代表性 spec并比较 fingerprint。禁止各模块自行修改 `sys.path`；路径建立只允许由 `aiter.jit.core` 集中完成。
 
 任务 A 只消费 `KernelSpec` 中与 workspace、tile、split-K和batch有关的字段；任务 B 再消费完整 capability。不要为任务 A 另建一份简化 kid表，否则任务 B会再次迁移同一批事实。
 
@@ -203,6 +240,7 @@ class KernelSpec:
     family: str
     kid: int
     kernel_tag: str
+    launcher_symbol: str
 
     block_m: int
     block_n: int
@@ -221,19 +259,21 @@ class KernelSpec:
     split_k: SplitKSpec
     launch_kind: str           # direct / two_stage / fused
 
-    supports_bias: bool
-    bias_dtypes: tuple[str, ...]
+    # bias存在时允许的精确 (output_dtype, bias_dtype) 组合；空 tuple表示不支持bias
+    output_bias_dtype_pairs: tuple[tuple[str, str], ...]
     batch_mode: str             # single_only / grid_parallel / host_serial
-    supports_m_tail: bool
-    supports_n_tail: bool
-    supports_k_tail: bool
+    m_alignment: int            # 1表示任意M；比 supports_m_tail 布尔值更精确
+    n_alignment: int
+    k_alignment: int
 
     cluster_dims: tuple[int, int, int] | None = None
     cluster_axes: tuple[str, str, str] | None = None
     addressing_mode: str = "legacy_full_extent_buffer_resource"
 ```
 
-这里的 dtype 使用稳定字符串枚举，例如 `bf16`、`fp32`，runtime 再映射到 `torch.dtype`，codegen 映射到 C++ 类型。不要让 catalog 依赖 PyTorch 初始化。a16w16的 `scales=None`；a8w8 no-scale和blockscale/preshuffle差异由 `ScaleSpec` 与 family共同表达，不再靠某个 optional scale是否为 `None` 猜 kernel family。
+这里的 dtype 使用稳定字符串枚举，例如 `bf16`、`fp32`，runtime 再映射到 `torch.dtype`，codegen 映射到 C++ 类型。不要让权威 metadata依赖 PyTorch初始化。a16w16的 `scales=None`；a8w8 no-scale和blockscale/preshuffle差异由 `ScaleSpec` 与 family共同表达，不再靠某个 optional scale是否为 `None` 猜 kernel family。
+
+alignment必须记录 launcher真正执行的倍数，而不是 `supports_*_tail` 布尔近似。#4320 的 `m_align` 已证明某些 family要求 `2 * B_M`，只记录“没有 M tail”仍不足以判断 shape。bias也必须记录精确 `(output,bias)` pair，不能把两个 dtype列表做笛卡尔积后错误放宽 gfx950/gfx942或错误收紧 gfx1250。
 
 `SplitKSpec` 足以表达当前三种 runtime clamp：gfx950的每 split最小 prefetch迭代数、gfx942的最小迭代数/偶数循环/按 CU自动补 TLP，以及 gfx1250的非空 split约束。Python和generated launcher必须调用同一个纯算法或由同一模板生成，不能分别手写三份近似逻辑。
 
@@ -400,11 +440,14 @@ device kernel直接将 `ptr_ws` 转成 `D_WS *`，不再通过 host/device mirro
 
 ### 5.5 任务 A 的文件级修改
 
+在基线 `35696023` 上，`rg -l 'ws_handle|opus_splitk_ws' csrc aiter` 精确命中 22 个文件，其中真正读取 handle 的 kernel面是 3 个 traits、8 个 pipeline和3个 reduce文件。下面按符号/职责定位，不把易漂移的行号当成实现契约。完成后应再次用同一命令审计；若 #4320 已合入，命中集合会增加其 BMM文件，见本节末尾的条件清单。
+
 #### Python、metadata 和调用点
 
 | 文件 | 修改位置 | 修改内容 |
 |---|---|---|
-| `aiter/ops/opus/_kernel_catalog.py`（新增） | `KernelSpec.workspace`、tile和batch capability | 提供三架构现有 split-K kid的 dtype/layout、kernel batch mode和workspace batch storage；不通过 kid范围推导。 |
+| `csrc/opus_gemm/opus_gemm_common.py` | `OpusGemmInstance`投影和查询 API | 补齐三架构现有 split-K kid的 workspace dtype/layout、split-K、alignment、batch和addressing事实；生成 frozen `KernelSpec`，不通过 kid范围推导。 |
+| `aiter/ops/opus/_catalog.py`（PR0新增） | runtime metadata facade | 显式经 `aiter.jit.core`建立 `AITER_META_DIR`后转发 `get_kernel_spec()`；不复制实例表。 |
 | `aiter/ops/opus/_build_plan.py`（PR0新增） | compile-set planner/fingerprint | 用与 codegen相同的输入计算 planned compiled set；区分首次构建计划与 actual manifest，禁止缺失 manifest时假定全量 kid可用。 |
 | `aiter/ops/opus/_workspace.py`（新增） | `make_workspace_plan()`、`allocate_workspace()`、`validate_workspace()` | typed Tensor、requested上界容量、caller workspace校验；禁止全局无界 cache。 |
 | `aiter/ops/opus/_selector.py`（PR0新增） | `resolve_launch_config()` | 在所有正常 Python路径中先得到 kid；旧 C++ selector仅用于 shadow/golden对照。 |
@@ -420,13 +463,14 @@ device kernel直接将 `ptr_ws` 转成 `D_WS *`，不再通过 host/device mirro
 | `csrc/opus_gemm/include/opus_gemm.h` | a16w16声明、workspace init声明 | 增加 optional workspace到低层 launch；删除 C++ workspace init。最终命名在任务 B收敛为 `opus_gemm_a16w16_launch`。 |
 | `csrc/include/rocm_ops.hpp`、`csrc/pybind/opus_gemm_pybind.cu` | a16w16参数和 workspace init宏 | 注册 workspace参数；删除真实 workspace init binding。 |
 | `csrc/opus_gemm/opus_gemm.cu` | registry、includes、bf16 auto path | 删除 registry及 `<mutex>/<unordered_map>`；停用 generic `opus_gemm()` 的 bf16 launch分支，旧 selector代码只供 test-only golden probe使用。a8w8分支暂留到任务 B拆分。 |
-| `csrc/opus_gemm/include/gfx942/opus_gemm_traits_a16w16.cuh` | handle、helper、split-K kargs | 删除 `opus_splitk_ws_handle` 和 helper；kargs保存 `ptr_ws`。 |
+| `csrc/opus_gemm/include/opus_gemm_common.cuh` | shared include/ABI说明 | 删除 handle类型依赖和过期注释；只保留 direct-pointer launcher需要的共享定义。 |
+| `csrc/opus_gemm/include/gfx942/opus_gemm_traits_a16w16.cuh` | handle、`opus_splitk_ws_ptr()` helper、split-K kargs | 删除结构体、guard和二次解引用 helper；kargs保存 `ptr_ws`。 |
 | `csrc/opus_gemm/include/gfx950/opus_gemm_traits_a16w16_gfx950.cuh` | flatmm split-K handle/kargs | 同上；明确 `D_ACC/D_WS/D_OUT`。 |
 | `csrc/opus_gemm/include/gfx1250/opus_gemm_traits_a16w16_gfx1250.cuh` | cluster TDM handle/kargs | 同上；保持当前 two-stage数值算法。 |
 | `csrc/opus_gemm/include/gfx942/opus_gemm_pipeline_a16w16_em3en4_lds1_pgr2_sk.cuh`、`opus_gemm_pipeline_a16w16_kbuf1.cuh`、`opus_gemm_pipeline_a16w16_kbuf2v.cuh`、`opus_gemm_pipeline_a16w16_kbuf2v_bk128.cuh`、`opus_gemm_pipeline_a16w16_quad_mfma32_kbuf1.cuh` | workspace读取 | 改为直接使用 `ptr_ws`；不改变计算流水线。 |
 | `csrc/opus_gemm/include/gfx950/opus_gemm_pipeline_a16w16_flatmm_splitk_gfx950.cuh` | workspace读取 | 改为 direct pointer；main仍写 fp32 partial。 |
 | `csrc/opus_gemm/include/gfx1250/opus_gemm_pipeline_a16w16_cluster_tdm_splitk_ws_gfx1250.cuh`、`opus_gemm_pipeline_a16w16_clusterlaunch_tdm_splitk_ws_gfx1250.cuh` | workspace读取 | 改为 direct pointer；当前 batch==1约束进入 spec和launcher guard。 |
-| `csrc/opus_gemm/include/gfx942/splitk_reduce_gfx942.cuh`、`gfx950/splitk_reduce_gfx950.cuh`、`gfx1250/splitk_reduce_gfx1250.cuh` | reduce ABI | 输入改为直接 workspace pointer；显式区分 `D_WS` 与 `D_OUT`。 |
+| `csrc/opus_gemm/include/gfx942/splitk_reduce_gfx942.cuh`、`gfx950/splitk_reduce_gfx950.cuh`、`gfx1250/splitk_reduce_gfx1250.cuh` | reduce ABI | 输入改为直接 workspace pointer；显式区分 `D_WS` 与 `D_OUT`。gfx942有 baseline/OOB重载和转发层，必须全部迁移，不能只改最外层签名。 |
 
 #### codegen、测试和文档
 
@@ -441,6 +485,20 @@ device kernel直接将 `ptr_ws` 转成 `D_WS *`，不再通过 host/device mirro
 | `op_tests/test_opus_graph.py`（新增） | graph/compile | eager、HIP graph capture/replay、`torch.compile`和相同 shape双 stream。 |
 | `op_tests/test_opus_a16w16_gemm.py` | 三架构 split-K矩阵 | 覆盖 gfx942 bf16 workspace、gfx950 fp32 workspace、gfx1250 batch限制和bf16/fp32 output。 |
 | `aiter/ops/opus/README.md`、`csrc/opus_gemm/README.md` | workspace/TBO章节 | 删除 registry/prewarm说明，记录 typed Tensor和兼容空壳。 |
+
+#### #4320 先合入时的任务 A 增量
+
+#4320 会新增 gfx950 mxscale BMM split-K/fused workspace使用者。若它先于任务 A 落地且 Definition of Done仍是“整个 OPUS无 raw allocator”，还需同步修改：
+
+| 文件/区域 | 增量动作 |
+|---|---|
+| `aiter/ops/opus/bmm_op.py` | high-level wrapper按 `(arch,family,kid)` spec分配 typed workspace；raw binding显式接收 workspace；tuned kid失效时仍原子丢弃 kid和split-K。 |
+| `csrc/opus_gemm/include/opus_bmm.h`、`csrc/opus_gemm/opus_bmm.cu`、`csrc/include/rocm_ops.hpp`、`csrc/pybind/opus_gemm_pybind.cu` | BMM low-level ABI增加 workspace Tensor；unknown explicit kid改为严格失败。 |
+| `csrc/opus_gemm/codegen/gen_instances_gfx950.py` | `_BMM_MXSCALE_SPLITK_LAUNCHER_BODY` 及 fused launcher模板删除 `opus_splitk_ws_get/hipMalloc/hipFree`，改用 direct `ptr_ws`并生成容量/dtype检查。 |
+| `csrc/opus_gemm/include/gfx950/opus_gemm_traits_a8w8_scale_gfx950.cuh`、`splitk_reduce_gfx950.cuh`和相关 BMM pipeline | BMM kargs/reduce切到 direct pointer；为 partial和fused counter布局建立独立 `WorkspaceSpec`，不能套用 a16w16的 `[batch,split,padded_M,padded_N]`公式。 |
+| `op_tests/test_opus_a8w8_bmm.py`、graph/workspace测试 | 覆盖 `splitK>1`、fused kid、少1元素、capture/replay和并发；当前 tuned CSV全是 `splitK=1`，仅跑 tuned表不会触达 allocator路径。 |
+
+这部分不应凭当前 open PR 的行号预写 patch；#4320 rebase仍在变化。合入后先重新运行符号清单，再按 family workspace layout补 spec和测试。
 
 ## 6. 任务 B：接口重构方案
 
@@ -506,10 +564,10 @@ _opus_gemm_a8w8_blockscale_launch(A, B, x_scale, w_scale, out, kid)
 
 ```text
 1. normalize shape/dtype/layout
-2. explicit kid（若给定）
-3. runtime tuned CSV lookup
-4. Python heuristic
-5. validate spec capability + compiled-kid set
+2. explicit kid（若给定）-> 严格校验 -> return/error
+3. runtime tuned CSV lookup -> 校验 tuned kid与split-K
+4. tuned配置无效时原子丢弃 (kid, split-K)，再进入 Python heuristic
+5. validate heuristic spec capability + compiled-kid set
 6. resolve effective split-K
 7. return LaunchConfig
 ```
@@ -517,10 +575,12 @@ _opus_gemm_a8w8_blockscale_launch(A, B, x_scale, w_scale, out, kid)
 规则：
 
 - explicit kid 不兼容时直接抛错，不静默换 kernel。
-- tuned row 引用了未编译 kid时，默认 warning 后 heuristic；strict 模式直接失败。
+- tuned row的 kid只要未编译、arch/family不匹配或不满足 shape/dtype/layout/alignment，就必须把该行的 kid和split-K一起作废；默认 warning后走 heuristic，strict模式直接失败。不得把旧 tuned split-K传给新 kid。该规则直接采用 #4320 已验证的 shape gate。
+- heuristic产生自己的 split-K默认值/策略；它的结果再次走同一 capability和compiled-set校验，失败后才交给 framework fallback。
 - heuristic 只能从当前 build 的 compiled-kid set 中选择。
 - 不支持的 shape/layout 应交给 framework fallback，而不是让 C++再次选择。
 - selector迁移阶段同时调用旧 C++ selector做 shadow comparison，只比较 `(kid, split_k)`，不重复 launch kernel。
+- raw C++ binding收到的 kid必须精确存在于对应 `(arch,family,output dtype)` dispatch表；unknown kid直接 `AITER_CHECK`失败，不能采用 #4320 当前的默认 launcher回退。
 
 任务 B完成后，传给 raw binding的是已经解析好的 effective split-K。generated launcher可以用同源常量重算一次并 `AITER_CHECK` 相等，但不得再静默向下改值；否则 Python按一个 split数分配、kernel按另一个 split数执行，职责边界又会失效。
 
@@ -575,7 +635,7 @@ aiter/ops/opus/heuristics/
 
 第一阶段逐字等价移植现有 C++规则，并用 shape corpus 对比旧、新 `(kid, split_k)`。在完成 differential test 前不调整性能策略。
 
-gfx942 当前部分 heuristic 直接关联 launcher symbol；迁移时从中立 catalog生成 symbol -> kid映射，不能手写第二张表。对三架构的 CSV hit/miss corpus逐条对比旧、新 `(kid, split_k)`，全部差异解释完成后才能删除 C++ header。
+gfx942 当前部分 heuristic 直接关联 launcher symbol；迁移时从权威 `KernelSpec.launcher_symbol` 反查 symbol -> `(arch,family,kid)`，不能手写第二张表。对三架构的 CSV hit/miss corpus逐条对比旧、新 `(kid, split_k)`，全部差异解释完成后才能删除 C++ header。
 
 shadow comparison不得新增长期 production ABI。可在测试构建开关下生成一个 legacy selector probe，把旧 function pointer通过同源的 symbol -> kid表转换成 kid，并将 corpus结果写成 golden JSON；Python selector与该 JSON/测试 probe比较。完成迁移后 probe与旧 heuristic header同批删除。
 
@@ -621,7 +681,8 @@ C++ 中保留：
 
 | 文件 | 修改位置 | 修改内容 |
 |---|---|---|
-| `aiter/ops/opus/_kernel_catalog.py`（PR0新增） | capability字段 | 在任务 A workspace字段基础上补齐 dtype/layout/bias/tail/addressing等完整 KernelSpec。 |
+| `csrc/opus_gemm/opus_gemm_common.py` | authoring records、frozen spec projection和查询 API | 在任务 A workspace字段基础上补齐 dtype/layout/bias/alignment/addressing等 capability；维持唯一实例登记处。 |
+| `aiter/ops/opus/_catalog.py`（PR0新增） | runtime facade | 只转发权威查询与 fingerprint，不复制 metadata；保证 source/editable/wheel导入一致。 |
 | `aiter/ops/opus/_build_plan.py`（PR0新增） | planned/actual compiled set | 纳入完整 tune key、mandatory family和manifest fingerprint；与 codegen输出做一致性校验。 |
 | `aiter/ops/opus/_selector.py`（PR0新增） | selection policy | 从 shadow模式切换为唯一 selector；完成 exact effective split-K、compiled set过滤和 fallback。 |
 | `aiter/ops/opus/_workspace.py`（任务 A新增） | runtime split-K planner | 从 requested上界切换到 selector给出的精确 effective split-K；保留 caller workspace校验。 |
@@ -629,7 +690,7 @@ C++ 中保留：
 | `aiter/ops/gemm_tune_lookup.py`（新增） | 全文件 | 统一 tuned CSV loader和完整 key；提供按 `libtype/family` 查询。 |
 | `aiter/ops/opus/gemm_op_a16w16.py` | module doc、`opus_gemm_a16w16_tune()`、`gemm_a16w16_opus()` | 任务 A已完成 allocate/launch；本任务收敛公开入口、删除残余 auto-dispatch兼容路径并将 raw binding正式改名为 launch。 |
 | `aiter/ops/opus/gemm_op_a8w8.py`（新增） | 全文件 | 从 mega entry中接管 a8w8/a8w8-scale接口；不同 scale/layout family 使用不同 launcher。 |
-| `aiter/ops/opus/common.py` | CSV loader、mono kid表 | 首先改成对统一 tune loader/catalog 的 compatibility re-export；所有调用迁完后删除。mono tile capability 从 KernelSpec读取。 |
+| `aiter/ops/opus/common.py` | CSV loader、mono kid表 | 首先改成对统一 tune loader/`_catalog` facade 的 compatibility re-export；所有调用迁完后删除。mono tile capability 从 KernelSpec读取。 |
 | `aiter/ops/opus/__init__.py` | import/stub/`__all__` | 导出新的 family public API；在兼容周期结束时移除 `opus_gemm_workspace_init` 空壳；旧 tune wrapper标记 deprecated。 |
 | `aiter/ops/opus/_arch.py` | arch probe 文档/接口 | 保留探测功能；不要在包级别假设所有 OPUS family 支持同一 arch，支持集合由 family catalog决定。 |
 | `aiter/tuned_gemm.py` | OPUS backend和 tuned config读取 | prewarm已由任务 A删除；本任务复用统一 tune loader并直接调用高层 OPUS API或 selector结果。 |
@@ -642,7 +703,7 @@ C++ 中保留：
 | `csrc/opus_gemm/include/opus_gemm.h` | 任务 A后的 launch声明和旧 mega entry | 用稳定的 family-specific launch声明替换 `opus_gemm()`/旧 tune名字；workspace ABI保持不变。 |
 | `csrc/include/rocm_ops.hpp` | `OPUS_GEMM_*_PYBIND` 宏 | 注册最终 a16w16/a8w8 family launch名字；兼容名只放在 Python。 |
 | `csrc/pybind/opus_gemm_pybind.cu` | `PYBIND11_MODULE` | 注册最终 family bindings；不再注册 generic mega entry。 |
-| `csrc/opus_gemm/opus_gemm.cu` | arch routers、`opus_gemm()`、kid范围函数 | registry已由任务 A删除；本任务删除 auto dispatch、mega entry和全部 kid-range policy，只保留小型 family launcher与 arch/kid dispatch。 |
+| `csrc/opus_gemm/opus_gemm.cu` | `opus_dispatch_a16w16()` router、`opus_gemm()`、`opus_kid_*`范围函数 | registry已由任务 A删除；本任务删除 auto dispatch、mega entry和全部 kid-range policy；保留/改名 `opus_a16w16_tune_dispatch()` 这一类纯 kid router及小型 family launcher。 |
 | `csrc/opus_gemm/include/opus_gemm_arch.cuh` | arch probe/shared types | 保留 arch探测；将真正跨 arch 的 launcher entry/metadata类型放在这里或单独的 `opus_gemm_dispatch.cuh`。 |
 | `csrc/opus_gemm/include/opus_gemm_common.cuh` | traits umbrella | 删除 workspace handle相关依赖；只聚合 launcher构造需要的 traits/kargs。 |
 
@@ -650,9 +711,9 @@ C++ 中保留：
 
 | 文件 | 修改位置 | 修改内容 |
 |---|---|---|
-| `csrc/opus_gemm/include/gfx942/opus_gemm_arch_gfx942.cuh` | runtime lookup和 tune lookup | 删除 shape lookup和 heuristic fallback；只保留 generated kid dispatch。 |
-| `csrc/opus_gemm/include/gfx950/opus_gemm_arch_gfx950.cuh` | runtime lookup、kid range、4GiB heuristic guard | 4GiB能力迁入 KernelSpec/Python selector；只保留 generated kid dispatch。 |
-| `csrc/opus_gemm/include/gfx1250/opus_gemm_arch_gfx1250.cuh` | runtime lookup和 heuristic | 删除 shape/heuristic；只保留当前已编译 kid dispatch。若可选任务 C落地，fused kid自动进入同一表。 |
+| `csrc/opus_gemm/include/gfx942/opus_gemm_arch_gfx942.cuh` | `opus_dispatch_a16w16_gfx942<>` 与 `opus_a16w16_tune_dispatch_gfx942<>` | 删除前者的 shape lookup/heuristic fallback；保留并改名后者的 generated kid dispatch。 |
+| `csrc/opus_gemm/include/gfx950/opus_gemm_arch_gfx950.cuh` | `opus_dispatch_a16w16_gfx950<>`、`kSplitkKid*`/`kid_is_splitk()`、4GiB guard | 删除 shape policy、kid区间和4GiB策略；保留 `opus_a16w16_tune_dispatch_gfx950<>`。4GiB能力由 KernelSpec/Python过滤，launcher同源复核。 |
+| `csrc/opus_gemm/include/gfx1250/opus_gemm_arch_gfx1250.cuh` | `opus_dispatch_a16w16_gfx1250<>`、`check_shape_4g()` 与 tune dispatch | 删除 shape/heuristic和粗粒度4GiB策略；保留 `opus_a16w16_tune_dispatch_gfx1250<>`。若可选任务 C落地，fused kid进入同一表。 |
 | `csrc/opus_gemm/include/gfx942/opus_gemm_heuristic_dispatch_gfx942.cuh` | 全文件 | Python heuristic golden对齐完成后删除。需要的 function-pointer typedef先移到共享 dispatch header。 |
 | `csrc/opus_gemm/include/gfx950/opus_gemm_heuristic_dispatch_gfx950.cuh` | 全文件 | 同上。 |
 | `csrc/opus_gemm/include/gfx1250/opus_gemm_heuristic_dispatch_gfx1250.cuh` | 全文件 | 同上。 |
@@ -663,8 +724,8 @@ traits、split-K pipeline和reduce ABI已由任务 A完成 direct-pointer迁移�
 
 | 文件 | 修改位置 | 修改内容 |
 |---|---|---|
-| `csrc/opus_gemm/gen_instances.py` | `generate_lookup`、tune lookup、main | 停止生成 `opus_gemm_lookup.h`；把 `opus_gemm_a16w16_tune_lookup.h` 重命名为 `opus_gemm_a16w16_kid_dispatch.h`；生成 dispatch metadata和 compiled-kid manifest；CSV 仅用于 subset compile。 |
-| `csrc/opus_gemm/opus_gemm_common.py` | `OpusGemmInstance`、kid集合、capability helper | metadata迁到统一 catalog；迁移期间只做 adapter/re-export；删除重复的 kid range/capability集合。 |
+| `csrc/opus_gemm/gen_instances.py` | `gen_lookup_dict()`、`get_tune_dict()`、CSV烘焙调用、`gen_a16w16_tune_lookup()` | 删除前三者对应的 `(M,N,K)` runtime lookup生成；保留并改名 `gen_a16w16_tune_lookup()` 为 kid dispatch生成器，产物改为 `opus_gemm_a16w16_kid_dispatch.h`；保留 `csv_kids`读取、sidecar、heuristic和mandatory family compile set，并生成带 fingerprint的 manifest。 |
+| `csrc/opus_gemm/opus_gemm_common.py` | `OpusGemmInstance`、kid集合、capability helper | 保持 authoring SSOT；新增/完善 immutable spec投影，删除其他文件中的 kid range/capability副本。 |
 | `csrc/opus_gemm/codegen/common.py` | generated dispatch metadata | workspace模板已由任务 A统一；本任务增加/收敛 `(kid, output dtype) -> launcher` entry结构。 |
 | `aiter/jit/optCompilerConfig.json` | `module_deepgemm_opus.blob_gen_cmd` | 保留 tune files用于 compile-set并集，但更新 generator参数名/说明，确认不再生成 runtime shape lookup。 |
 | `csrc/opus_gemm/opus_gemm_tune.py` | launch和candidate逻辑 | 使用新 catalog/low-level wrapper；输出完整 arch/family/workspace metadata；不触发旧 C++ heuristic。 |
@@ -680,6 +741,24 @@ traits、split-K pipeline和reduce ABI已由任务 A完成 direct-pointer迁移�
 | `op_tests/test_opus_a16w16_gemm.py` | 现有 e2e | 区分 explicit/tuned/heuristic路径；检查 selector source；加入多 arch、bias和output dtype矩阵。 |
 | `op_tests/test_opus_dispatch.py`（新增） | selector单元测试 | 不需要 GPU kernel即可验证完整 key、优先级、stale CSV、unsupported kid和heuristic filter；迁移期读取 test-only legacy probe生成的 golden corpus。 |
 | `op_tests/test_opus_graph.py`（新增） | HIP graph/compile | eager、capture/replay、`torch.compile`、同 shape双 stream并发。 |
+
+### 6.7 与 #4320 的冲突面和保留项
+
+#4320 是 open PR，不应在本文中假定它已经先合或后合；但它与任务 A/B 修改同一组枢纽文件，排期前必须选择 rebase方向。
+
+| #4320 文件 | 与本方案的交集 | 合并时要求 |
+|---|---|---|
+| `aiter/jit/core.py` | 新增 mxscale BMM tuned config并修改 merge/dedup规则；任务 B也要统一 tuned loader | 保留新 family配置；将 dedup key规则纳入统一 loader测试，不回退其 trailing `tuned`文件名修复。 |
+| `aiter/jit/optCompilerConfig.json` | 同一个 `module_deepgemm_opus` build recipe | BMM tune file继续参与 compile set；“不生成 runtime shape lookup”不能误删 BMM kid dispatch。 |
+| `aiter/ops/opus/__init__.py` | family导出列表 | 保留 BMM public API和 arch gate；只统一底层 catalog/selector约定。 |
+| `csrc/include/rocm_ops.hpp`、`csrc/pybind/opus_gemm_pybind.cu` | 同一 extension的注册点 | 保留 `opus_bmm_a8w8_mxscale` family binding；不要为入口数量目标把 BMM塞回 GEMM mega entry。 |
+| `csrc/opus_gemm/gen_instances.py` | manifest、kernel集合、kid lookup生成 | 删除的只有 a16w16 `(M,N,K)` runtime lookup；保留 #4320 的 BMM kid map、manifest声明和 family compile set，并逐步统一为 `*_kid_dispatch`生成器。 |
+| `csrc/opus_gemm/codegen/gen_instances_gfx950.py` | task A workspace模板和 #4320 BMM emit都在此文件 | 若追求模块级 allocator清零，先按 §5.5迁移 BMM workspace，再做机械冲突解决；不得保留隐藏的 BMM `hipMalloc`块。 |
+| `csrc/opus_gemm/opus_gemm_common.py` | 两边都增加 instance字段和 family列表 | 以 `(arch,family,kid)`为身份合并；#4320 已出现跨 family重复 kid，任何只以整数 kid为 key的全局 catalog都不合法。 |
+| `csrc/opus_gemm/include/gfx950/opus_gemm_traits_a16w16_gfx950.cuh`、`splitk_reduce_gfx950.cuh` | #4320也修改 shared traits/reduce | 先按最终文件重新审计模板实例和 ABI，不能靠旧行号套 patch。 |
+| `csrc/opus_gemm/README.md` | 两边都更新 file map/dispatch说明 | 文档同时保留 BMM family，并明确其最终 workspace所有权。 |
+
+若 #4320 即将合入，较少返工的顺序是先在其 head上 rebase PR0/任务 A/B，因为它以新增 family为主，而本方案会系统改写公共注册和生成层；若其落地时间不确定，任务不应被 open PR无限阻塞，可以先在当前基线实施，但必须给 #4320 提供迁移说明：改用 frozen spec查询、严格 unknown-kid行为和外部 workspace ABI。无论哪种顺序，#4320 新增的 `opus_bmm.cu`、`opus_bmm.h`、`bmm_op.py`及测试都应保留为独立 family，而不是被任务二删除。
 
 ## 7. 可选任务 C：gfx1250 fused split-K
 
@@ -711,7 +790,7 @@ batch mode / bias / M-N-K tail capability
 | `csrc/opus_gemm/include/gfx1250/opus_gemm_pipeline_a16w16_clusterlaunch_tdm_splitk_fuse_gfx1250.cuh`（新增） | fused main/reduce pipeline、cluster barrier和partial发布/读取。 |
 | `csrc/opus_gemm/include/gfx1250/opus_gemm_traits_a16w16_gfx1250.cuh` | 新 fused kargs/traits，复用任务 A的 `ptr_ws`，明确 `D_ACC/D_WS/D_OUT`。 |
 | `csrc/opus_gemm/codegen/gen_instances_gfx1250.py` | 新 `gen_splitk_fuse_instance()`，生成具体 cluster dims和static split-K launcher。 |
-| `aiter/ops/opus/_kernel_catalog.py` | 注册 fused kid、static split-K、cluster、workspace和capability。 |
+| `csrc/opus_gemm/opus_gemm_common.py` | 在权威实例表注册 fused kid，并投影 static split-K、cluster、workspace和capability；runtime经 `_catalog.py` 自动可见。 |
 | `csrc/opus_gemm/gen_instances.py` | 注册 generator并将 kid加入 subset compile和现有 kid dispatch。不得新增 shape lookup。 |
 | `csrc/opus_gemm/opus_gemm_tune.py` | fused kid不 sweep runtime split-K；按static属性过滤shape并记录结果。 |
 | `op_tests/test_opus_splitk_gfx1250.py`（新增） | 覆盖static split-K、bf16/fp32 workspace/output、bias、K-tail和非法cluster配置。 |
@@ -764,7 +843,7 @@ batch == 1，或 stride[0] == rows * stride[-2]
 Y stride == (M*N, N, 1)
 ```
 
-这会拒绝 batch broadcast view、transpose和overlapping slice，但保留合法的 padded row pitch。bias shape继续允许 `[N]` 或 `[batch,N]`，dtype组合则必须按 `KernelSpec.bias_dtypes` 校验：当前 gfx950/gfx942共享 launcher要求 bias dtype匹配 output，gfx1250 two-stage reduce额外支持 bf16 output + fp32 bias。高层 API可以接收 bf16/fp32 bias，但 selector只能选择真正支持该组合的 kid；不能把 gfx1250的能力误推广到其他 arch，也不能在重构时丢掉已支持的组合。
+这会拒绝 batch broadcast view、transpose和overlapping slice，但保留合法的 padded row pitch。bias shape继续允许 `[N]` 或 `[batch,N]`，dtype组合则必须按 `KernelSpec.output_bias_dtype_pairs` 校验：当前 gfx950/gfx942共享 launcher要求 bias dtype匹配 output，gfx1250 two-stage reduce额外支持 bf16 output + fp32 bias。高层 API可以接收 bf16/fp32 bias，但 selector只能选择真正支持该组合的 kid；不能把 gfx1250的能力误推广到其他 arch，也不能在重构时丢掉已支持的组合。
 
 每个 spec需要声明 tail、batch和 stride capability。对于 transpose、expand/broadcast、负 stride 和 sliced view，高层 wrapper只能选择以下一种行为：
 
@@ -778,19 +857,33 @@ Y stride == (M*N, N, 1)
 
 ## 9. 实施 PR 顺序
 
-### PR0：中立 catalog 与 Python selector bridge
+### 上游集成门：先确认 #4246/#4320 的落地状态
 
-- 将 runtime需要的 kernel metadata移到 `_kernel_catalog.py`；`csrc/opus_gemm/opus_gemm_common.py` 暂时适配该 catalog。
+#4246 对任务 A 有三种可行集成方式：
+
+1. 等 #4246 整体合入，再补 gfx942/gfx950并清理剩余 registry。代码量最少，但任务被 fused pipeline的 review进度绑定。
+2. 在当前基线独立完成三架构 workspace迁移，由 #4246 后续 rebase。边界最可控，也能尽快消除 allocator，但双方会在 gfx1250文件产生冲突。
+3. 从 #4246 提取 workspace-only改动先合，再让 fused pipeline基于它。架构和 review边界最好，若能协调上游维护者优先推荐。
+
+不能只 cherry-pick `4ac1fa8` 就宣告完成：该 commit仅覆盖 gfx1250，且最初按默认 bf16分配；`86d1eba` 才按 kid真实 workspace dtype/shape修正潜在越界并删除 prewarm，但它同时理解 #4246 新增的 fused kid。实际实施应移植两者的最终不变量，而不是机械搬一个 commit。
+
+#4320 的 rebase选择见 §6.7。若它先合，PR0必须把 BMM family纳入 `(arch,family,kid)` catalog和compiled manifest；任务 A是否同时迁移其 raw allocator必须在 PR范围中明确。该选择是排期决定，不是任务 A/B 的架构依赖。
+
+### PR0：权威 metadata 查询层与 Python selector bridge
+
+- 保留 `csrc/opus_gemm/opus_gemm_common.py` 为 authoring SSOT，补齐字段并提供 frozen `KernelSpec`查询；新增无数据副本的 `_catalog.py` runtime facade。
+- 加 source/editable/wheel三种无 GPU import/fingerprint测试，固定 `AITER_META_DIR -> csrc` 契约。
 - 新增 `LaunchConfig`、`WorkspaceSpec`、planned compile-set helper和带 fingerprint的 compiled-kid manifest读取。
 - 等价移植 gfx942/gfx950/gfx1250 heuristic，先以 shadow模式对比旧 C++ selector。
 - 对 CSV hit和miss corpus完成 `(kid, split_k)` golden对齐后，高层 Python切到显式 kid launch。
-- 不删除旧 C++ selector，不改变 kernel数值实现；metadata移动后 codegen产物应无差异。
+- 不删除旧 C++ selector，不改变 kernel数值实现；metadata投影加入后既有 kernel codegen产物应无差异。
 
 ### PR-A：现有 split-K workspace Torch 化
 
 - 按 gfx1250 -> gfx950 -> gfx942 的提交顺序迁移 direct-pointer ABI；gfx942最后处理其 bf16 workspace变体。
 - Python使用 typed `torch.empty`，任务 A阶段按 runtime split-K安全上界分配。
 - 删除三架构 launcher内部 allocator、全部 handle/registry和 `tuned_gemm.py` prewarm。
+- 若 #4320 已合且采用模块级 allocator清零目标，同批完成 §5.5 的 BMM增量；若不纳入，PR标题、DoD和审查命令都限定为 a16w16。
 - Python保留 `opus_gemm_workspace_init()` deprecation空壳一个 release。
 - 完成 HIP graph、双 stream/TBO、错误 workspace和三架构数值测试。
 
@@ -842,12 +935,16 @@ Y stride == (M*N, N, 1)
 - 两个 CPU线程各驱动一条 stream的 TBO场景。
 - caller-provided workspace生命周期和复用。
 - 多次不同 shape调用后显存占用不因无界 Python cache持续增长。
+- 若 #4320 已纳入任务 A，额外覆盖 mxscale BMM `splitK>1`和fused counter workspace；其当前 tuned CSV全为 `splitK=1`，必须构造显式用例。
 
 ### 10.3 dispatch、lookup 和 build
 
 - explicit、tuned hit、heuristic miss、framework fallback。
+- explicit unknown/incompatible kid严格失败；不得静默落到默认 launcher。
+- tuned kid因 alignment、dtype、arch/family或compiled-set失效时，断言 kid和split-K被原子丢弃，heuristic不会继承 stale split-K。
 - 三架构全 CSV行和代表性 miss shape，重构前后 `(kid, split_k)` golden对比。
-- gfx942 launcher symbol -> kid映射由 catalog生成并覆盖测试。
+- gfx942 launcher symbol -> kid映射由权威 spec生成并覆盖测试。
+- source、editable install、wheel install均可在无 GPU/未加载 extension时导入 `_catalog.py`，代表性 spec和 catalog fingerprint一致。
 - 单 arch、多 arch和 subset compile。
 - 每个 runtime tuned row、每个 heuristic可能返回值和mandatory family kid均属于 compiled set。
 - stale CSV、未编译 kid产生明确 warning/error。
@@ -867,7 +964,7 @@ Y stride == (M*N, N, 1)
 
 - gfx942/gfx950/gfx1250现有 split-K全部接收外部分配的 typed workspace Tensor。
 - 正常 Python a16w16路径在 launch前已知最终 kid，不存在隐藏的 C++ auto路径继续 raw allocation。
-- OPUS GEMM launch路径不存在 workspace相关 `hipMalloc`、`hipFree`、`hipHostMalloc` 或 registry。
+- a16w16 launch路径不存在 workspace相关 `hipMalloc`、`hipFree`、`hipHostMalloc` 或 registry；若 PR范围声明模块级清理，则 #4320 BMM路径也必须满足，不能只检查 `opus_gemm.cu`。
 - workspace dtype、device、contiguous和容量错误在 launch前被拒绝，不允许越界或 hang。
 - graph capture、同 shape双 stream和TBO测试通过。
 - fused kernel不是任务 A完成条件。
@@ -875,6 +972,7 @@ Y stride == (M*N, N, 1)
 任务 B 完成必须满足：
 
 - runtime tuned lookup和 heuristic只在 Python执行一次。
+- tuned配置失效时 `(kid, split-K)` 原子回退；explicit/low-level unknown kid严格失败。
 - C++ 不再包含 `(M,N,K)` lookup和 framework fallback policy。
 - C++ 只按 arch/family/kid/output dtype dispatch。
 - codegen只生成 kid dispatch，不生成 runtime shape lookup；build-time CSV compile set仍保留。
@@ -930,7 +1028,9 @@ rg -n "ws_handle|opus_splitk_ws_|SplitkWsRegistry" csrc/opus_gemm
 rg -n "workspace_init|prewarm" csrc/opus_gemm aiter/ops/opus aiter/tuned_gemm.py
 rg -n "opus_gemm_lookup|heuristic_dispatch" csrc/opus_gemm
 rg -n "kid.*>=|kid.*<" aiter/ops/opus csrc/opus_gemm
-rg -n "sys.path.*csrc|torch.empty\(.*uint8" aiter/ops/opus
+rg -n "sys.path\.(insert|append)" aiter/ops/opus csrc/opus_gemm
+rg -n "from csrc.opus_gemm.opus_gemm_common" aiter/ops/opus
+rg -n "torch.empty\(.*uint8" aiter/ops/opus
 ```
 
-这些搜索不要求最终仓库绝对零命中，例如 deprecation空壳、历史说明或非 GEMM代码可能保留文本；但任何新的 split-K workspace policy、allocator、runtime `csrc`反向依赖或 kid-range capability判断都必须被阻止。
+这些搜索不要求最终仓库绝对零命中，例如 deprecation空壳、历史说明、未纳入本期的 #4320 BMM或非 GEMM代码可能保留文本；但每个命中都要按 PR声明的范围解释。runtime读取 `csrc` 本身是允许的，禁止的是 OPUS模块各自修改 `sys.path`或绕过 `_catalog.py` facade直接依赖可变 instance dict；任何新的 split-K raw allocator、kid-range capability判断或 byte workspace都必须被阻止。
