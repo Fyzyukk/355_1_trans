@@ -346,7 +346,85 @@ kernel 确实是按 `void*` + 自算 stride 访问的，扁平 `uint8` 也能跑
 
 `opus_gemm_workspace_init` 是**公开 API 的破坏性删除**。仓内调用点只有 `tuned_gemm.py`（同批删除），但下游 vLLM/sglang 可能有。处理：python 保留空壳 + `DeprecationWarning` 一个 release，C++ 侧直接删。
 
-### 3.5 任务一验收
+### 3.5 任务一完整文件清单（22 个文件）
+
+用 `grep -rln "ws_handle\|opus_splitk_ws" csrc/ aiter/` 得到，即任务一的精确边界。**不在这张表里的文件，任务一不该碰。**
+
+#### A. ABI 定义（改这里，其余都是跟随）
+
+| 文件 | 位置 | 改什么 |
+|---|---|---|
+| `csrc/opus_gemm/gen_instances.py` | `SPLITK_REDUCE_ABI_MAP` L69-94（三个 arch 条目的 `ws_arg`/`ws_type`，L73-74 / L80-81 / L90-91）；注释 L87 | `const opus_splitk_ws_handle* ws_handle` → `void* ptr_ws`。**单点改动，三个 arch 的生成签名同时变** |
+
+#### B. traits — 删结构体定义 + 改 kargs 字段
+
+| 文件 | 位置 | 改什么 |
+|---|---|---|
+| `include/gfx950/opus_gemm_traits_a16w16_gfx950.cuh` | `struct opus_splitk_ws_handle` L593；注释 L603；kargs 字段 L611 | 删结构体；kargs 改 `void* ptr_ws`；顺带拆 `D_ACC`/`D_WS`/`D_OUT`（§3.2） |
+| `include/gfx942/opus_gemm_traits_a16w16.cuh` | 结构体 L106；`opus_splitk_ws_ptr<D_WS>()` helper L114-128；kargs 字段 L137 | 同上。**helper 整个删掉**——它就是那次多余的 device 端 load |
+| `include/gfx1250/opus_gemm_traits_a16w16_gfx1250.cuh` | 头注释 L7；结构体 L45；注释 L55/L60；kargs 字段 L64 | 同上 |
+
+三份 `opus_splitk_ws_handle` 定义靠 `#ifndef` 互相防冲突，删掉后 guard 一起删。
+
+#### C. pipeline — 每个文件只有 1 行
+
+| 文件 | 行 | 现状 → 目标 |
+|---|---|---|
+| `include/gfx950/..._flatmm_splitk_gfx950.cuh` | 266 | `reinterpret_cast<D_C*>(kargs.ws_handle->ptr)` → `reinterpret_cast<D_WS*>(kargs.ptr_ws)` |
+| `include/gfx1250/..._cluster_tdm_splitk_ws_gfx1250.cuh` | 386 | `reinterpret_cast<DataAcc*>(kargs.ws_handle->ptr)` → `reinterpret_cast<D_WS*>(kargs.ptr_ws)` |
+| `include/gfx1250/..._clusterlaunch_tdm_splitk_ws_gfx1250.cuh` | 454 | 同上 |
+| `include/gfx942/..._em3en4_lds1_pgr2_sk.cuh` | 620 | `opus_splitk_ws_ptr<D_C>(kargs.ws_handle)` → `reinterpret_cast<D_WS*>(kargs.ptr_ws)` |
+| `include/gfx942/..._kbuf1.cuh` | 74 | 同上 |
+| `include/gfx942/..._kbuf2v.cuh` | 77 | 同上 |
+| `include/gfx942/..._kbuf2v_bk128.cuh` | 114 | 同上 |
+| `include/gfx942/..._quad_mfma32_kbuf1.cuh` | 97 | 同上 |
+
+**这 8 个文件共 8 行，数值算法一行不动。** 只有实际引用 `ws_handle` 的 pipeline 需要改，非 split-K kernel 不做机械重写——保持 diff 可审查。
+
+#### D. reduce kernel — 改签名 + 取指针
+
+| 文件 | 位置 |
+|---|---|
+| `include/gfx950/splitk_reduce_gfx950.cuh` | include 注释 L65；kernel 签名 L72；`ws_handle->ptr` L86 |
+| `include/gfx942/splitk_reduce_gfx942.cuh` | include 注释 L8；签名 L15/L197/L212/L228；helper 调用 L50/L260；转发 L205/L220 |
+| `include/gfx1250/splitk_reduce_gfx1250.cuh` | 头注释 L7/L9；include 注释 L19；签名 L26；`ws_handle->ptr` L36；stub 的 `(void)ws_handle` L176 |
+
+gfx942 那份最重（9 处），因为它有 baseline/OOB 两套 + 转发层。
+
+#### E. codegen launcher — 删 grow 块
+
+| 文件 | 位置 | 改什么 |
+|---|---|---|
+| `codegen/gen_instances_gfx950.py` | L1317-1357 | 删 extern 声明 + capture 探测 + grow；改为接 workspace tensor、校验、取 `data_ptr()` |
+| `codegen/gen_instances_gfx942.py` | L495-528（含 L500-502 三个 extern、L505-506 的 `sizeof(Traits::D_C)`、L525 sync、L528 device handle） | 同上。**`Traits::D_C` 改 `Traits::D_WS`** |
+| `codegen/gen_instances_gfx1250.py` | L289-326（含 L299 无 batch 的公式、L318 sync、L325-326 device mirror）；头注释 L7 | 同上 |
+
+三份 grow 块的三个不同 `ws_bytes` 公式一起消失，公式统一搬到 python 的 `kid_workspace_plan()`（§3.1）。
+
+#### F. 入口 / 绑定 / 框架
+
+| 文件 | 位置 | 改什么 |
+|---|---|---|
+| `csrc/opus_gemm/opus_gemm.cu` | registry L325-429（14 处命中）；include L27-29；`opus_gemm_a16w16_tune` 签名 L267 | 删 registry 三函数 + `opus_gemm_workspace_init`；入口加末位 `std::optional<aiter_tensor_t> workspace = std::nullopt`；加 §3.3 三条 `AITER_CHECK` |
+| `csrc/opus_gemm/include/opus_gemm.h` | `opus_gemm_a16w16_tune` 声明；末尾 `opus_gemm_workspace_init()` 声明 | 加 workspace 参数；删 init 声明 |
+| `csrc/include/rocm_ops.hpp` | `OPUS_GEMM_A16W16_TUNE_PYBIND` L285；`OPUS_GEMM_WORKSPACE_INIT_PYBIND` L296 | 前者加 workspace 参数；后者整个删 |
+| `csrc/pybind/opus_gemm_pybind.cu` | L18 | 删 `OPUS_GEMM_WORKSPACE_INIT_PYBIND;` |
+| `csrc/opus_gemm/include/opus_gemm_common.cuh` | L24 注释 | 删对 `opus_splitk_ws_handle` 的引用 |
+| `csrc/opus_gemm/opus_gemm_common.py` | `OpusGemmInstance` L27-68 附近 | 加 `ws_includes_batch`；加 `kid_workspace_dtype()` / `kid_workspace_plan()`（§3.1） |
+| `aiter/ops/opus/gemm_op_a16w16.py` | raw binding L73-88；`opus_gemm_a16w16_tune` L166；workspace init L528-529 | 加 workspace 参数；调用前分配；删 init binding |
+| `aiter/ops/opus/__init__.py` | import L44；stub L51；`__all__` L57 | 删 `opus_gemm_workspace_init` 导出（或留 deprecation 空壳） |
+| `aiter/tuned_gemm.py` | prewarm 块 L41-125；调用点 L623 | **整段删** |
+| `csrc/opus_gemm/opus_gemm_tune.py` | `run_opus_gemm` L1091；`run_opus_gemm_bench` L1140 | tuner 也要分配 workspace 再调 |
+| `csrc/opus_gemm/README.md` | 3 处 `ws_handle` | 更新为 direct-pointer ABI，删 registry 生命周期说明 |
+
+#### G. 新增
+
+| 文件 | 内容 |
+|---|---|
+| `op_tests/test_opus_workspace.py` | workspace 契约负例（§3.6） |
+| `op_tests/test_opus_graph.py` | HIP graph capture/replay + 双 stream 并发（§3.6） |
+
+### 3.6 任务一验收
 
 | 项 | 要求 |
 |---|---|
@@ -557,7 +635,94 @@ def normalize_gemm_layout(A, B, *, out=None, out_dtype, bias=None,
 | `SPLITK_REDUCE_ABI_MAP` | 三份 | | | 任务一后三份除 kernel 名外完全相同，合并为共享默认 + per-arch override |
 | `OpusA16W16NoscaleKernel` typedef | 定义在 gfx950 heuristic 头，被另两 arch 复用 | | | 挪到 `opus_gemm_common.cuh`，解开反向依赖 |
 
-### 4.5 任务二验收
+### 4.5 任务二完整文件清单（约 25 个文件）
+
+与任务一**几乎不重叠**：任务一改的是 traits / pipeline / reduce / codegen launcher 里的 workspace 取址，任务二改的是 arch 头里的 dispatch 策略、`opus_gemm.cu` 的入口、和 python 的选核层。唯一交集是 `opus_gemm.cu`、`opus_gemm.h`、`rocm_ops.hpp`、`gen_instances.py`、`opus_gemm_common.py`、`gemm_op_a16w16.py` 六个文件——但改的是各自不同的段落。
+
+#### A. 删除 C++ 策略层（§4.2c 的具体位置）
+
+| 文件 | 位置 | 动作 |
+|---|---|---|
+| `csrc/opus_gemm/gen_instances.py` | `gen_lookup_dict()` L430-535（含 L532 写文件） | **删**（不是 `gen_a16w16_tune_lookup`，见 §1.1） |
+| | `gen_a16w16_tune_lookup()` L537-597（含 L591 写文件） | **改名** `gen_a16w16_kid_dispatch()`，产物改名 `opus_gemm_a16w16_kid_dispatch.h`（§4.2c） |
+| | `get_tune_dict()` L855 | 删 |
+| | CSV 烘焙块 L1128-1175（`codegen.gen_lookup_dict(filtered)` L1168、日志 L1172） | 删烘焙，**保留 `csv_kids` 喂 subset compile** |
+| | subset compile L1044 / L1103；heuristic 不变式 L1107 | **不动**。见下方警告 |
+| | `gen_manifest_head` L619 注释提及 `opus_gemm_lookup.h` | 更新注释 |
+| `include/gfx950/opus_gemm_arch_gfx950.cuh` | `kSplitkKidMin/Max` L102-103、`kid_is_splitk` L106-110 | 删（副本，权威在 `opus_gemm_common.py`） |
+| | `opus_dispatch_a16w16_gfx950<bf16_t>` L173-213（`lower_bound` L183、`kid_is_splitk` L210）、`<fp32_t>` L215-248（`lower_bound` L225、4G 守卫 L233） | 删 |
+| | `opus_a16w16_tune_dispatch_gfx950<>` L122-158 | **保留**（kid dispatch 是 C++ 的活） |
+| `include/gfx942/opus_gemm_arch_gfx942.cuh` | `opus_dispatch_a16w16_gfx942<bf16_t>` L66-86、`<fp32_t>` L88-106 | 删 |
+| | `opus_a16w16_tune_dispatch_gfx942<>` L108-140 | **保留** |
+| `include/gfx1250/opus_gemm_arch_gfx1250.cuh` | `check_shape_4g` L79-92；`opus_dispatch_a16w16_gfx1250<bf16_t>` L96-117、`<fp32_t>` L119-134 | 删 |
+| | `opus_a16w16_tune_dispatch_gfx1250<>` L40-70 | **保留** |
+| `include/gfx1250/opus_gemm_heuristic_dispatch_gfx1250.cuh` | 整个文件（48 行） | 删（先移植到 python，§4.2a） |
+| `include/gfx942/opus_gemm_heuristic_dispatch_gfx942.cuh` | 整个文件（157 行） | 删。**先把返回 launcher 符号名改成返回 kid** |
+| `include/gfx950/opus_gemm_heuristic_dispatch_gfx950.cuh` | heuristic 函数体（127 行中的大部分） | 删。`OpusA16W16NoscaleKernel` typedef 和 `opus_gfx950_detail::*` 被另两 arch 复用，**先挪到 `opus_gemm_common.cuh`**，然后整个文件删 |
+| 生成物 `opus_gemm_lookup.h` | 整个 | 不再生成 |
+
+> ⚠️ `gen_instances.py:1044` 的 `S = (csv_kids | sidecar_kids | HEURISTIC_DEFAULT_KIDS) & valid_kids` 和 L1103 的 `S = (S & tag_keys) | HEURISTIC_DEFAULT_KIDS`、L1107 的 heuristic 不变式检查 **一行都不能动**。CSV 在这里的作用是「决定编译哪些 kid 进 .so」，与「运行时怎么查表」是两回事，但两者共用同一段 CSV 读取代码，删烘焙时极易连坐。
+
+#### B. C++ 入口收敛
+
+| 文件 | 位置 | 动作 |
+|---|---|---|
+| `csrc/opus_gemm/opus_gemm.cu` | arch router `opus_dispatch_a16w16<>` L55-81 | 删 |
+| | kid 分类常量 + 谓词 L186-265（80 行） | 删（权威在 python） |
+| | `opus_gemm()` L113-182 | fp8 分支 L133-158 抽成 `opus_gemm_a8w8_tune`；bf16 分支 L160-177 删；整个 `opus_gemm()` 删（§4.2d，待 §8.3 确认） |
+| | `opus_gemm_a16w16_tune` L267-323 的 dtype if-else L289-322 | 改表驱动（§4.3a） |
+| `csrc/opus_gemm/include/opus_gemm.h` | `opus_gemm()` 声明 | 删，换 `opus_gemm_a8w8_tune` |
+| `csrc/include/rocm_ops.hpp` | `OPUS_GEMM_PYBIND` L273-283 | 删/替换 |
+| `csrc/pybind/opus_gemm_pybind.cu` | `OPUS_GEMM_PYBIND;` L16 | 同步 |
+
+#### C. Python 新增选核层
+
+| 文件 | 动作 |
+|---|---|
+| `aiter/ops/opus/heuristic.py`（新增） | 三个 arch 的 heuristic 移植；import 时自检返回值 ⊆ `HEURISTIC_DEFAULT_KIDS`（§4.2a） |
+| `aiter/ops/opus/dispatch.py`（新增） | `resolve_kid()`：explicit → CSV → heuristic；explicit 不兼容抛错，CSV 不兼容连 splitK 一起丢（§4.2b） |
+| `aiter/ops/opus/layout.py`（新增） | `normalize_gemm_layout()`，合并 `_validate_and_reshape` + `_check_a16w16_tune_layout`（§4.3b） |
+
+#### D. Python 现有文件
+
+| 文件 | 位置 | 动作 |
+|---|---|---|
+| `csrc/opus_gemm/opus_gemm_common.py` | `OpusGemmInstance` L27-68 | 补字段：`supports_{m,n,k}_tail` / `supports_batch` / `max_tensor_bytes` / `bias_dtypes`（§2.2 注） |
+| | 文件尾 | 加 `kid_info` / `kid_is_splitk` / `kid_supports_bias` / `kid_arch` / `kid_exceeds_4g`（§4.1） |
+| `aiter/ops/opus/gemm_op_a16w16.py` | `_opus_gemm_bf16_dispatch` L264-288 | 删（C++ 那条路没了） |
+| | `_SPLITK_KID_MIN/MAX` L289-290 | 删（副本） |
+| | `_validate_and_reshape` L293-421、`_check_a16w16_tune_layout` L89-165 | 搬进 `layout.py` |
+| | `gemm_a16w16_opus` L426-527 | 改为 normalize → resolve_kid → allocate → launch |
+| `aiter/ops/opus/common.py` | `_load_tuned_dict` L102-162、`_KEY_COLUMNS` L73-83 | **修 glob bug**：runtime 只读框架选定的 CSV；key 加 `gfx`（§4.2b2） |
+| | `_MONO_TILE_KID_TILES` L197-203、`mono_kid_shape_ok` L206 | 删，改从 `opus_gemm_common` 推导（§4.1） |
+| `csrc/opus_gemm/opus_gemm_tune.py` | `kid_rejects_shape` L364-575（含 4G 过滤 L399）、`kid_rejects_bias` L576 | 4G 合进 `kid_exceeds_4g()`；加 gfx1250 的 batch==1 门（§4.3b） |
+| `aiter/ops/opus/__init__.py` | 导出列表 | 同步新旧 API |
+| `aiter/ops/deepgemm.py` | `opus_gemm_a16w16_tune` shim L47-61 | 转发到新 wrapper，更新 warning |
+| `csrc/gemm_a16w16/gemm_a16w16_tune.py` | opus backend 调用点 | 走新 python wrapper，不直连旧 pybind 签名 |
+| `aiter/tuned_gemm.py` | `_opus_tune` 调用点 L625 附近 | 复用统一 lookup |
+
+#### E. dtype / layout（§4.3）与 codegen
+
+| 文件 | 动作 |
+|---|---|
+| `csrc/opus_gemm/opus_gemm.cu` | dtype 规则表（§4.3a） |
+| `csrc/opus_gemm/codegen/common.py` | `BIAS_HOST_VALIDATE` 收敛成共享片段，不再每个 emit 函数各贴一份（§4.3c） |
+| `aiter/jit/optCompilerConfig.json` | `module_deepgemm_opus.blob_gen_cmd`：保留 tune files（subset compile 用），更新说明确认不再生成 runtime lookup |
+
+#### F. 测试与文档
+
+| 文件 | 动作 |
+|---|---|
+| `op_tests/test_gemm_codegen.py` | 加 §4.6 的四条 codegen 回归断言 |
+| `op_tests/test_opus_dispatch.py`（新增） | selector 单测，**不需要 GPU**：优先级、stale CSV、未编译 kid、heuristic 过滤 |
+| `op_tests/test_opus_a16w16_gemm.py` | 区分 explicit/tuned/heuristic 三条路径，检查选核来源 |
+| `aiter/ops/opus/README.md` / `csrc/opus_gemm/README.md` | 按新调用链重写 |
+
+#### 与 #4320 的冲突面
+
+`gen_instances.py`、`opus_gemm_common.py`、`opus_gemm_pybind.cu`、`rocm_ops.hpp`、`optCompilerConfig.json` 五个文件两边都改。已决定 **#4320 先合**（§8.6），任务二在其之上做，并把 BMM 的入口一并纳入 §4.6 的入口清单验收。
+
+### 4.6 任务二验收
 
 | 项 | 要求 |
 |---|---|
