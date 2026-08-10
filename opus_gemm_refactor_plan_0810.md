@@ -4,7 +4,9 @@
 **任务二**：重构 opus gemm 的各种入口
 
 > 目标仓库：`/root/workspace/0810/aiter`，`main` @ `35696023`
-> 参考实现：ROCm/aiter PR #4246 `gfx1250 opus gemm splitk fuse`
+> 参考实现（两个 PR 分别对应两个任务，不是同一件事的两种做法）：
+> - **任务一** → ROCm/aiter PR **#4246** `gfx1250 opus gemm splitk fuse`（open）中的 commit `4ac1fa8`：gfx1250 的 workspace 从 hipMalloc registry 切到 python `torch.empty`
+> - **任务二** → ROCm/aiter PR **#4320** `Add opus fp8 mxscale BMM kernels for gfx950`（yzhou103，open，即「zoe 那个」）：已经把分层做对了的样板，详见 §2.3
 > 任务来源：Lyu, Binglue 的两段需求（`11.png` / `download.png`）
 >
 > **本文取代 `opus_gemm_refactor_plan.md`**。那份基于另一个更旧的 checkout，与本树有三处实质差异（见 §0.1），照那份做会踩空。
@@ -18,6 +20,21 @@
 > 「还有 splitk 的 workspace 开辟需要切换到 torch 的方式」「按这个方式（PR #4246），或者 zoe 那个也可」
 
 **独立可交付**。只改 workspace 的内存所有权：C++ 内部 `hipMalloc` registry → python `torch.empty` 传指针进来。不触碰 dispatch / 入口逻辑。
+
+> **两个参考 PR 的分工（一处常见误读）**
+>
+> #4246 捆了**两件独立的事**，只有第一件属于任务一：
+>
+> | | 内容 | 与任务一 |
+> |---|---|---|
+> | (a) commit `4ac1fa8` | gfx1250 的 `SplitkWsRegistry`/hipMalloc → python `torch.empty`；kargs `ws_handle*` → `void* ptr_ws` | **这才是要抄的**。注意上游只切了 gfx1250，gfx942/gfx950 仍留在 registry 上——**任务一要做的是把它推广到三个 arch** |
+> | (b) 新 pipeline `..._tdm_splitk_fuse_gfx1250.cuh` | cluster barrier 在单 kernel 内做 split-K 归约，省掉独立 reduce kernel 的 launch + 一趟显存往返 | 无关。kernel 层改动 |
+>
+> 两个澄清：
+> - **TDM 本来就在树里**。`opus_gemm_pipeline_a16w16_{cluster,clusterlaunch}_tdm_splitk_ws_gfx1250.cuh` 从 #3517（`90ee2737`）就有了。#4246 加的是 `_fuse` 变体，不是 TDM 本身。
+> - **fuse 并没有消掉 workspace**。非最后一个 split 的 workgroup 仍要把 fp32 partial cast 成 workspace dtype 存进 GL2（默认 bf16，可选 fp32）。省的是 reduce kernel 的 launch，不是 buffer。这反而**加重**了 §3.1 坑 1：#4246 的 commit `86d1eba` 就是因为「写 fp32 的 kernel 写进按 bf16 算大小的 buffer」把机器挂了，才改成按 kid 自己的 ws dtype 定尺寸。
+>
+> **zoe 的 #4320 不是 workspace 参考——它整个没有 workspace。** `opus_bmm.cu` 的入口是 `opus_bmm_a8w8_mxscale(O, wo_a, Y, x_scale, w_scale, int splitK, int kernelId)`，无 workspace 参数、无 hipMalloc、无 registry，tuned CSV 里 78 行 `splitK` 全是 1。它的价值在任务二，见 §2.3。
 
 ### 任务二 — 重构 opus gemm 的各种入口
 
@@ -168,13 +185,41 @@
 | workspace 尺寸公式 | 从 `opus_gemm_common.py` 的 kid 元信息推导 | python 分配器 |
 | kid → launcher 函数指针 | `opus_gemm_a16w16_tune_lookup.h`（codegen 产物，**保留**） | C++ |
 
-**关键前提（已验证）**：`csrc/opus_gemm/opus_gemm_common.py` 是纯 python 模块，运行时可 import（`opus_gemm_tune.py` 已经这么用）。所以 kid 元信息**不需要额外 codegen 一份 JSON**——直接 import。C++ 唯一需要的 kid 知识就是「kid → 函数指针」，这本来就是 codegen 产物。
+**关键前提（已验证）**：`csrc/opus_gemm/opus_gemm_common.py` 是纯 python 模块，运行时可 import。所以 kid 元信息**不需要额外 codegen 一份 JSON、也不需要新建一个 catalog 模块**——直接 import 现有的。C++ 唯一需要的 kid 知识就是「kid → 函数指针」，这本来就是 codegen 产物。
+
+> **为什么不新建 `aiter/ops/opus/_kernel_catalog.py`**（另一版方案的提议）
+>
+> 动机是「runtime 不该反向 import `csrc/`」。但这个顾虑不成立：
+> - `aiter/jit/core.py:408` 已经 `sys.path.insert(0, AITER_META_DIR)`，集中做一次，不是运行时临时改 path；
+> - `from csrc.X import Y` 是仓内既有模式：`aiter/ops/sampling.py:7`、`aiter/ops/attention.py:11`、`aiter/aot/pa.py:4`；
+> - #4320 正是这么做的：`from csrc.opus_gemm.opus_gemm_common import a8w8_mxscale_bmm_kernel_lists`；
+> - `setup.py:169` 会把 `csrc/` 整个 copytree 进 `aiter_meta/`，装完的 wheel 里也在。
+>
+> 新建 catalog 的实际后果是：为了消灭 metadata 副本，先造一个副本，然后要把 codegen、tuner 的所有调用点逐个迁过去。**该做的是把字段补进现有的 `OpusGemmInstance`。**
+>
+> 不过那版提的字段设计值得抄进来——现在 `OpusGemmInstance` 缺的：`supports_m_tail` / `supports_n_tail` / `supports_k_tail`（现在散在 `kid_rejects_shape` 的 if 里）、`supports_batch`（gfx1250 的 batch==1 约束现在只写在注释里）、`max_tensor_bytes`（4 GiB 守卫，见 §4.1）、`ws_includes_batch`（§3.1 坑 2）、`bias_dtypes`。
+
+### 2.3 §2.1 的分层在 #4320（zoe）里已经落地了
+
+上面的契约不是纸上设计——PR #4320 的 opus BMM 模块（新增，与现有 opus GEMM 平行）**已经完全按这个形态写了**。任务二本质上是把 GEMM 侧对齐到 BMM 侧已经达到的水平。逐条对照：
+
+| §2.1 契约 | #4320 的做法 |
+|---|---|
+| C++ 只做 kid → 函数指针 | `opus_bmm.cu` 唯一入口 `opus_bmm_a8w8_mxscale(O, wo_a, Y, x_scale, w_scale, splitK, kernelId)`，实现是 `kTune.find(id)` 单次表查找 + 一个默认 kid 兜底。注释原话：「Single table lookup instead of a ~40-case switch」。**无 CSV、无 heuristic、无 hipMalloc** |
+| heuristic 在 python | `bmm_op.py::_heuristic_mxscale_kid(g, m, n, k)`，纯 python if-else |
+| CSV 查表在 python，且只有一处 | 在 `batched_gemm_a8w8_mxscale` 里；`bmm_op.py` 的 docstring 明说 tuned id 是「read one layer up … which hands the tuned id down」 |
+| kid 元信息单一来源 | **直接 import codegen 模块反查，不手写副本**：<br>`from csrc.opus_gemm.opus_gemm_common import a8w8_mxscale_bmm_kernel_lists`<br>`return {int(kid): int(inst.m_align) for fam in ... for kid, inst in fam.items()}`（`functools.cache` 修饰） |
+| CSV 命中的 kid 也要过 shape 门 | `if kernelId is not None and not _kid_runs_m(int(kernelId), m): kernelId = splitK = None` — 拒绝时 kid 和 splitK **一起丢**，然后落回 heuristic |
+
+最后一条尤其值得抄。#4320 的注释记了它为什么这么做：那张 `m_align` 表是用来替换「已经漂移了的手工维护副本」的，漂移的后果是 kid326 在从未调优过的非对齐 M 上被派发，损失 ~9%。**这正是 §4.1 要消灭的东西、和 §4.2b 要修的那个「CSV 命中后无条件信任 solidx」缺陷，人家已经踩过并修好了。**
+
+⚠️ **排期冲突**：0810 树里**完全没有 bmm**（无 `opus_bmm.cu`、无 `aiter/ops/opus/bmm_op.py`）。#4320 是即将进来的新模块，而它要改的 `gen_instances.py` / `opus_gemm_common.py` / `opus_gemm_pybind.cu` / `rocm_ops.hpp` / `optCompilerConfig.json` **和任务二是同一批文件**。见 §8.6。
 
 ---
 
 ## 3. 任务一 — splitK workspace 切换到 torch
 
-按 PR #4246 的**最终形态**一次到位，不重演它中间那版 `ws_handle` 间接层。
+按 #4246 commit `4ac1fa8` 的形态一次到位，不重演它中间那版 `ws_handle` 间接层。**但覆盖三个 arch**——上游只切了 gfx1250。
 
 **边界**：只动 workspace 的分配者与传递方式。不碰 dispatch、不碰选核逻辑、不碰 dtype/layout 校验。改完后 `gemm_a16w16_opus` / `opus_gemm_a16w16_tune` 的外部行为完全不变（除 `opus_gemm_workspace_init` 被废弃）。
 
@@ -186,9 +231,16 @@ python 要能算出「这个 kid 这次调用需要多少字节 workspace」。�
 def kid_workspace_dtype(kid: int) -> str | None:
     """splitK kid 返回 'fp32_t' / 'bf16_t'；非 splitK kid 返回 None。"""
 
-def kid_workspace_bytes(kid: int, batch: int, M: int, N: int, K: int, split_k: int) -> int:
-    """0 表示不需要 workspace。"""
+def kid_workspace_plan(kid: int, batch: int, M: int, N: int, K: int,
+                       split_k: int) -> tuple[tuple[int, ...], str] | None:
+    """返回 (shape, dtype_str)；None 表示该 kid 不需要 workspace。
+
+    返回 shape 而非 byte 数：typed tensor 才能让 C++ 侧校验 dtype，
+    而 #4246 挂机的根因就是 dtype 错配（见坑 1）。
+    """
 ```
+
+> **为什么是 shape+dtype 而不是 byte 数**：`torch.empty(nbytes, dtype=uint8)` 的扁平 buffer 传到 C++ 只剩一个 `void*`，§3.3 那条尺寸断言就只能比字节数，查不出「按 bf16 大小分配、却被写 fp32」这类错。typed tensor 让 C++ 能同时断言 dtype 和 numel，把坑 1 从「靠 python 算对」变成「算错也会被拒」。
 
 **三个坑，逐一说明：**
 
@@ -215,7 +267,17 @@ def kid_workspace_bytes(kid: int, batch: int, M: int, N: int, K: int, split_k: i
 "ws_type": "void*",
 ```
 
-kargs 里 `ws_handle` 字段改为 `void* ptr_ws`；kernel 侧 `opus_splitk_ws_ptr<D_C>(kargs.ws_handle)` 改为直接 `reinterpret_cast<D_C*>(kargs.ptr_ws)`（少一次 device 端 load）。
+kargs 里 `ws_handle` 字段改为 `void* ptr_ws`；kernel 侧 `opus_splitk_ws_ptr<D_C>(kargs.ws_handle)` 改为直接 `reinterpret_cast<D_WS*>(kargs.ptr_ws)`（少一次 device 端 load）。
+
+**顺带把 `D_C` 拆开——这是坑 1 的病根。** 现在 traits 里的 `D_C` 同时被当成「累加类型」和「workspace 元素类型」用，gfx942 的 `sizeof(typename Traits::D_C)`（`gen_instances_gfx942.py:506`）就是这个歧义的直接产物。改名为三个各自明确的别名：
+
+```cpp
+using D_ACC = fp32_t;   // 寄存器内累加，恒 fp32
+using D_WS  = ...;      // workspace 元素类型（bf16 或 fp32，由 kid 决定）
+using D_OUT = ...;      // 最终输出类型
+```
+
+改名本身是机械的，但它把「workspace 该多大」从一个需要读注释才知道的问题变成类型系统里的显式事实——比在分配器里加校验治本。这条独立于任务一的其余部分，可以先做。
 
 删除 `opus_splitk_ws_handle` 的**三份**结构体定义（`gfx950/opus_gemm_traits_a16w16_gfx950.cuh:593`、`gfx942/opus_gemm_traits_a16w16.cuh:106`、`gfx1250/opus_gemm_traits_a16w16_gfx1250.cuh:45`）及其 `#ifndef` guard。
 
@@ -232,29 +294,34 @@ void opus_gemm_a16w16_tune(aiter_tensor_t& XQ, aiter_tensor_t& WQ, aiter_tensor_
                            std::optional<aiter_tensor_t> workspace = std::nullopt);
 ```
 
-C++ 侧保留**两个** `AITER_CHECK`：
+C++ 侧保留**三个** `AITER_CHECK`：
 
 ```cpp
 AITER_CHECK(!kid_needs_ws || workspace.has_value(), "kid ", kernelId, " requires a workspace");
-AITER_CHECK(ws_bytes_needed <= ws.numel() * ws.element_size(),
-            "workspace too small: need ", ws_bytes_needed, " got ", ws.numel() * ws.element_size());
+AITER_CHECK(ws.dtype() == kD_WS_dtype, "workspace dtype mismatch: kid ", kernelId,
+            " writes ", kD_WS_dtype, ", got ", ws.dtype());
+AITER_CHECK(ws_elems_needed <= ws.numel(),
+            "workspace too small: need ", ws_elems_needed, " got ", ws.numel());
 ```
 
-第二条是防 §3.1 三个坑的最后一道防线，且**不违反分层**——launcher 本来就已经算出了 `padded_M * padded_N * split_k`（而且是 clamp 之后的精确值），一次整数比较零成本。
+后两条是防 §3.1 三个坑的最后一道防线，且**不违反分层**——launcher 本来就已经算出了 `padded_M * padded_N * split_k`（而且是 clamp 之后的精确值），两次比较零成本。
+
+**dtype 那条是关键**：#4246 挂机（"corrupting adjacent device memory and hanging the machine"）的直接原因就是「写 fp32 的 kernel 拿到按 bf16 算大小的 buffer」。只比 numel 查不出这个——numel 是对的，元素宽度是错的。
 
 > `aiter_tensor_t` 没有 `nbytes()`，只有 `numel()`（`csrc/include/aiter_tensor.h:22`）和 `element_size()`（`:25`）。
 
-**Python 侧分配**：
+**Python 侧分配**——用 typed tensor，不用 `uint8` 扁平 buffer：
 
 ```python
 def _alloc_splitk_workspace(kid, batch, M, N, K, split_k, device):
-    nbytes = opus_gemm_common.kid_workspace_bytes(kid, batch, M, N, K, split_k)
-    if nbytes == 0:
+    plan = opus_gemm_common.kid_workspace_plan(kid, batch, M, N, K, split_k)
+    if plan is None:
         return None
-    return torch.empty(nbytes, dtype=torch.uint8, device=device)
+    shape, dtype_str = plan
+    return torch.empty(shape, dtype=_TORCH_DTYPE[dtype_str], device=device)
 ```
 
-用 `uint8` 扁平 buffer 而非 `[batch, split_k, padded_M, padded_N]` typed tensor：kernel 反正按 `void*` + 自算 stride 访问，typed shape 只会诱导读者以为 stride 有语义。（PR #4246 用 typed tensor；两者对 kernel 无差别，若 review 更看重可读性也可以。）
+kernel 确实是按 `void*` + 自算 stride 访问的，扁平 `uint8` 也能跑。但 typed tensor 让上面那条 dtype 断言成立——这个收益压过「typed shape 可能暗示 stride 有语义」的顾虑。#4246 也是 typed。
 
 **HIP graph**：不需要任何特殊处理。torch caching allocator 在 capture 期间返回 replay-stable 的地址——这正是 PR #4246 能删掉 prewarm 的原因。
 
@@ -289,9 +356,10 @@ def _alloc_splitk_workspace(kid, batch, M, N, K, split_k, device):
 | **CUDA graph** | 新增 capture/replay 用例 + golden 对拍。这是原机制存在的全部理由，必须证明新机制也成立 |
 | **双 stream 并发** | 新增用例，覆盖原 TBO 场景（两 CPU 线程各驱动一 stream 同时跑 splitK） |
 | **ws dtype 覆盖** | 必须同时覆盖 fp32-ws kid 与 bf16-ws kid（gfx942 的 bf16ws 变体）——§3.1 坑 1 只在后者暴露 |
+| **workspace 契约负例** | 新增 `op_tests/test_opus_workspace.py`：正好够大、**少 1 个元素**、错 dtype、错 device、noncontiguous、caller 自带 workspace 复用。§3.3 那三条 `AITER_CHECK` 每条都要有对应的负例，否则等于没写 |
 | 性能 | splitK shape sweep 前后对比，不应回退（少一次 device 端 handle load，理论上略好） |
 
-后五项**都不能省**。
+后六项**都不能省**。
 
 ---
 
@@ -360,7 +428,26 @@ def resolve_kid(M, N, K, *, bias, dtype, outdtype, arch) -> tuple[int, int]:
     return heuristic.heuristic_kid(arch, M, N, K, has_bias=bias), 0
 ```
 
-顺手修掉一个现存缺陷：`gemm_op_a16w16.py:498` 命中 CSV 后**无条件信任** solidx，只对 mono-tile 做了 `mono_kid_shape_ok` 特判。统一走 `kid_rejects_shape` 后，任何 kid 的 shape 不匹配都优雅降级到 heuristic，而不是靠一堆 kid-family 特判打补丁。
+两条选择规则，都是修现存缺陷：
+
+**(i) CSV 命中的 kid 也要过 shape 门。** `gemm_op_a16w16.py:498` 现在命中 CSV 后**无条件信任** solidx，只对 mono-tile 做了 `mono_kid_shape_ok` 特判。统一走 `kid_rejects_shape` 后，任何 kid 的 shape 不匹配都降级到 heuristic，而不是靠一堆 kid-family 特判打补丁。#4320 已经这么做了，且拒绝时 **kid 和 splitK 一起丢**（`kernelId = splitK = None`）——tuned row 的 splitK 是配着那个 kid 调出来的，单独留着没意义。
+
+**(ii) explicit kid 不兼容时抛错，不静默换 kernel。** 用户显式传 `kernelId=` 是在表达「我就要这个」，多半是在做性能对比或复现。静默换成另一个 kernel 会让 benchmark 结果无法解释。只有 CSV/heuristic 选出的 kid 才允许降级。
+
+#### b2. runtime CSV 查询范围（一个现存 bug）
+
+`aiter/ops/opus/common.py:_load_tuned_dict()` 把 `model_configs/*_bf16_tuned_gemm.csv` **全部 glob 进来**，concat 后按 `us` 升序 first-wins。也就是说：跑 A 模型时，如果 B 模型的 CSV 里有同 shape 且 `us` 更小的行，**会命中 B 的配置**。key 是 9 元组 `(cu_num, M, N, K, bias, dtype, outdtype, scaleAB, bpreshuffle)`，不含模型标识，撞车无从察觉。
+
+build-time 和 runtime 对 CSV 的用途必须分开：
+
+| | 用途 | 该读哪些 CSV |
+|---|---|---|
+| build-time（`gen_instances.py --tune_files`） | 决定编译哪些 kid 进 .so | **取并集**。多编几个 kid 只是编译时间代价 |
+| runtime（`lookup_tuned`） | 选这次用哪个 kid | **只读框架当前明确选定的配置文件**（`AITER_CONFIG_*` 指定的那个），不 glob |
+
+另外 key 里应加上 `gfx`。CSV schema 已有该列（`common.py:23` 的注释确认），只是 `_KEY_COLUMNS` 没用。旧 CSV 缺 `gfx` 时，仅在当前 arch 唯一无冲突的情况下兼容；新写出的行必须带。
+
+这条**不阻塞**任务二的其余部分，但既然要重写 lookup 层，顺手修掉比留着划算。
 
 #### c. C++ 侧删除
 
@@ -378,6 +465,8 @@ def resolve_kid(M, N, K, *, bias, dtype, outdtype, arch) -> tuple[int, int]:
 | `opus_gemm_arch_gfx942.cuh` | 对应的 `opus_dispatch_a16w16_gfx942<>` | ~50 |
 | `opus_gemm.cu:54-81` | arch router `opus_dispatch_a16w16<>` | 28 |
 | `opus_gemm.cu:160-177` | `opus_gemm()` 的 bf16 分支 | 18 |
+
+**同时把保留的那张表改名**：`opus_gemm_a16w16_tune_lookup.h` → **`opus_gemm_a16w16_kid_dispatch.h`**，生成函数 `gen_a16w16_tune_lookup()` → `gen_a16w16_kid_dispatch()`。§1.1 那个「两张 lookup 表只能删一张」的风险，与其靠 review 警惕，不如让剩下那张的名字不再含 "lookup" —— 改完之后 `grep -rn lookup csrc/opus_gemm` 的命中就都是该删的。纯改名，零行为变化，建议**在删除动作之前**单独一个 commit。
 
 > **重要副作用（务必确认）**：`gen_instances.py:1044` 的 subset-compile 集合是
 > `S = (csv_kids | sidecar_kids | HEURISTIC_DEFAULT_KIDS) & valid_kids`。
@@ -474,7 +563,8 @@ def normalize_gemm_layout(A, B, *, out=None, out_dtype, bias=None,
 |---|---|
 | 结构 | `opus_gemm.cu` ≤ 160 行；文件内不出现 CSV / heuristic / hipMalloc / shape 策略 |
 | 入口数 | C++ 顶层入口 3 → 2，全部形如 `(tensors…, kernelId[, splitK][, workspace])` |
-| 副本数 | kid 语义常量全仓仅 `opus_gemm_common.py` 一份；`opus_gemm_lookup.h` 不存在；`opus_gemm_a16w16_tune_lookup.h` **仍存在** |
+| 副本数 | kid 语义常量全仓仅 `opus_gemm_common.py` 一份；`opus_gemm_lookup.h` 不存在；改名后的 `opus_gemm_a16w16_kid_dispatch.h` **仍存在** |
+| **codegen 回归** | 在 `op_tests/test_gemm_codegen.py` 加断言，把「不许倒退」写成测试而非 review 纪律：<br>① 生成产物中不含 `hipMalloc` / `hipFree` / `hipHostMalloc`<br>② 不生成任何 runtime shape lookup（产物里没有 `(M,N,K)` 键的表）<br>③ kid → launcher 映射唯一（无重复 kid）<br>④ 二次生成 diff 为空 |
 | **kid 选择等价性** | 重构前后对同一 shape sweep（三 arch × 全 CSV 行 + 一批 CSV-miss shape）逐条对比选出的 (kid, splitK)，要求**完全相同**。这是任务二唯一能证明「没改行为」的手段，必须写成脚本而非抽查 |
 | 编译集合 | 对每个 CSV opus 行断言 `solidx ∈ S`，防 §4.2c 那个连坐删除 |
 | 数值 | `op_tests/test_opus_a16w16_gemm.py` 三 arch 全绿 |
@@ -586,11 +676,19 @@ Skill 应在**任务二完成之后**写——写在重构前只会固化现在�
 
 **影响任务一：**
 
-1. **「或者 zoe 那个也可」**——除 PR #4246 外还有一个参考实现，我没找到对应 PR/分支。若 zoe 那版在 workspace 所有权上有不同取舍（比如走 aiter 内部 buffer pool 而非 `torch.empty`），需要先看一眼再定 §3.3 形态。**只影响实现细节，不影响分层架构。**
-2. **workspace 参数加在现有入口尾部（默认 `nullopt`）还是另开入口**——前者对现有调用点零改动，本文按前者写。
-3. **gfx1250 的 cluster/TDM splitk 是否也要一并 rebase 到 PR #4246 的 fuse 形态**（cluster barrier + GL2-resident partials，连 workspace 都不再需要），还是这次只做 workspace 所有权切换。**本文按后者写**——fuse 是 kernel 层改动，与「workspace 交给 torch」是两件事，混在一起 review 不清晰。
+1. **workspace 参数加在现有入口尾部（默认 `nullopt`）还是另开入口**——前者对现有调用点零改动，本文按前者写。
+2. **和 #4246 的关系怎么处理。** 该 PR 仍 open 且已经在 gfx1250 上做了任务一的 (a) 部分。三条路：
+   - (i) 等 #4246 合入，任务一只补 gfx950/gfx942 两个 arch 并删掉 registry —— 工作量最小，但被上游 review 进度卡住（目前 valarLip 的 review 未到）；
+   - (ii) 任务一独立做全三个 arch，与 #4246 冲突时由后者 rebase —— 任务一是纯 workspace 改动、#4246 的主体价值是 fuse pipeline，rebase 代价可控；
+   - (iii) 把 (a) 从 #4246 拆出来单独先合。
+   **倾向 (iii)**：所有权切换和 fuse pipeline 本来就该是两个 PR，拆开对双方 review 都更清晰，也解开任务一的依赖。
 
 **影响任务二：**
 
-4. **`opus_gemm()` 是删还是留薄壳**（§4.2d）——取决于下游有没有直接调 pybind 的 `opus_gemm`。
-5. **a8w8 要不要一并改造成 `opus_gemm_a8w8_tune`**（§4.2d/e）——它现在没有 tuned 表、只有一个硬编码 launcher、gfx950-only。若近期不打算给 a8w8 做 tuning，保留现状、只把它从 `opus_gemm()` 里挪出来也够。
+3. **`opus_gemm()` 是删还是留薄壳**（§4.2d）——取决于下游有没有直接调 pybind 的 `opus_gemm`。
+4. **a8w8 要不要一并改造成 `opus_gemm_a8w8_tune`**（§4.2d/e）——它现在没有 tuned 表、只有一个硬编码 launcher、gfx950-only。若近期不打算给 a8w8 做 tuning，保留现状、只把它从 `opus_gemm()` 里挪出来也够。
+5. **既然 #4320 已经把 BMM 侧的分层做对了（§2.3），GEMM 侧要不要直接照抄它的模块布局**——即新建 `aiter/ops/opus/dispatch.py` + `heuristic.py`（本文 §4.2 的写法），还是像 BMM 那样把 heuristic 和 kid 校验都放进单个 op 文件。BMM 的 kernel 家族少所以单文件够用；GEMM 有三个 arch，我倾向拆文件。
+
+**跨任务：**
+
+6. **#4320 的落地时机与任务二的文件冲突。** 两者都改 `gen_instances.py` / `opus_gemm_common.py` / `opus_gemm_pybind.cu` / `rocm_ops.hpp` / `optCompilerConfig.json`。建议 **#4320 先合、任务二后做**：#4320 是新增模块（改动集中在新文件 + 少量注册点），任务二是删改存量（大面积改现有文件）；反过来会让 #4320 整个重写一遍适配。同时任务二应把 BMM 一并纳入 §4.5 的「入口清单」验收，避免刚合进来的 BMM 又漂移出去。
