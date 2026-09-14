@@ -1,0 +1,19 @@
+[0;33mW20260914 03:59:04.737158 140348694122368 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.025507 sec
+[m[0;33mW20260914 03:59:04.737611 140348694122368 simple_timer.cpp:55] [rocprofv3] '/root/workspace/gcnasm_new/gcnasm-mxfp8-final-pipeline-source-20260910/opus_gemm/mxfp8_gemm_16x16x128_blockscale_bpreshuffle_4wave/trace_block_scale_latest_20260914_035904/build_snapshot/gemm_a8w8_blockscale_bpreshuffle.exe -m 8192 -n 8192 -k 8192 -b 1 -v 0' ::     0.000000 sec
+[m*** Aborted at 1789358344 (unix time) try "date -d @1789358344" if you are using GNU date ***
+PC: @     0x7fa58491def4 pthread_mutex_lock
+*** SIGSEGV (@0x268) received by PID 744024 (TID 0x7fa57a0ecf80) from PID 616; stack trace: ***
+    @     0x7fa58491fee8 (unknown)
+    @     0x7fa58aa9547e (unknown)
+    @     0x7fa5848c8520 (unknown)
+    @     0x7fa58491def4 pthread_mutex_lock
+    @     0x7fa585aab564 omp_get_num_devices
+    @     0x7fa5885a7c83 ompt_post_init
+    @     0x7fa58851bc73 __kmp_get_global_thread_id_reg
+    @     0x7fa58851155e __kmpc_fork_call
+    @     0x559736fc5b67 run(Options const&)
+    @     0x559736fc6b1e main
+    @     0x7fa58a7436c6 (unknown)
+    @     0x7fa5848afd90 (unknown)
+    @     0x7fa5848afe40 __libc_start_main
+    @     0x559736fc3255 _start

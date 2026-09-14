@@ -1,0 +1,183 @@
+{
+  "status": "FAILED",
+  "started": "2026-09-14T03:59:04.492311+00:00",
+  "command": [
+    "rocprofv3",
+    "--att=true",
+    "--att-library-path",
+    "/opt/rocm/lib",
+    "-d",
+    "/root/workspace/gcnasm_new/gcnasm-mxfp8-final-pipeline-source-20260910/opus_gemm/mxfp8_gemm_16x16x128_blockscale_bpreshuffle_4wave/trace_block_scale_latest_20260914_035904",
+    "--",
+    "/root/workspace/gcnasm_new/gcnasm-mxfp8-final-pipeline-source-20260910/opus_gemm/mxfp8_gemm_16x16x128_blockscale_bpreshuffle_4wave/trace_block_scale_latest_20260914_035904/build_snapshot/gemm_a8w8_blockscale_bpreshuffle.exe",
+    "-m",
+    "8192",
+    "-n",
+    "8192",
+    "-k",
+    "8192",
+    "-b",
+    "1",
+    "-v",
+    "0"
+  ],
+  "output_directory": "/root/workspace/gcnasm_new/gcnasm-mxfp8-final-pipeline-source-20260910/opus_gemm/mxfp8_gemm_16x16x128_blockscale_bpreshuffle_4wave/trace_block_scale_latest_20260914_035904",
+  "candidate": "unified_gsfa_mk_lane_bits",
+  "physical_gpu": 2,
+  "hip_index": 2,
+  "pci": "0000:65:00.0",
+  "environment": {
+    "HIP_VISIBLE_DEVICES": "2"
+  },
+  "source_hashes": {
+    "Makefile": "9bf84bf92c4d4396508fd3e09157fb5e8cad0048c34d27e3a70decefe6268b21",
+    "blockscale_bpreshuffle.py": "4d856582e365ab08cfc184446ffd8fddb30ba93a17dbacbdf34727da4d103c3f",
+    "gemm_a8w8_blockscale_bpreshuffle_launch.cc": "fbadc32fd0512ec7636d1531c4f3abf21d1e5e174f916a0450b502b93895c757",
+    "gemm_a8w8_mxfp8_scale_common.h": "dcfc354f5a9d6efb3f267208a9fe2750e9358ea0dca86ac8fb71b01b091d2693",
+    "gemm_a8w8_mxfp8_scale_host.cc": "2bb897d7361630c888b31b7a3442d1ccff9eda575932f5d04ef794ff8328cd63",
+    "gemm_a8w8_mxfp8_scale_kernel.cc": "58f4d8b0c1846d1be249040d488cf0cd986a6f1c43bd567e9680632a09938bab",
+    "kernel_dispatch.hpp": "aa548247e1d446f5c7e16531c4da2bdd02f2087bc838d1f3c006c74bada44b1d",
+    "tmpl_generic.hpp": "7bfc4e877d1747d53e4d460872d897450b44868c76eba3fbe70e3d4da9f817f2",
+    "traits.hpp": "55d8b8e7ea829c717fe71595c343e7051edf7b2b52fbd884bdc117ee27dec345"
+  },
+  "tested_source_hashes": {
+    "Makefile": "9bf84bf92c4d4396508fd3e09157fb5e8cad0048c34d27e3a70decefe6268b21",
+    "blockscale_bpreshuffle.py": "4d856582e365ab08cfc184446ffd8fddb30ba93a17dbacbdf34727da4d103c3f",
+    "gemm_a8w8_blockscale_bpreshuffle_launch.cc": "fbadc32fd0512ec7636d1531c4f3abf21d1e5e174f916a0450b502b93895c757",
+    "gemm_a8w8_mxfp8_scale_common.h": "dcfc354f5a9d6efb3f267208a9fe2750e9358ea0dca86ac8fb71b01b091d2693",
+    "gemm_a8w8_mxfp8_scale_host.cc": "2bb897d7361630c888b31b7a3442d1ccff9eda575932f5d04ef794ff8328cd63",
+    "gemm_a8w8_mxfp8_scale_kernel.cc": "58f4d8b0c1846d1be249040d488cf0cd986a6f1c43bd567e9680632a09938bab",
+    "kernel_dispatch.hpp": "aa548247e1d446f5c7e16531c4da2bdd02f2087bc838d1f3c006c74bada44b1d",
+    "tmpl_generic.hpp": "29f1c33ecf7a4302cd86c24fbab9e97eeb43f5f58dacbd3a48a31592f2d5f902",
+    "traits.hpp": "55d8b8e7ea829c717fe71595c343e7051edf7b2b52fbd884bdc117ee27dec345"
+  },
+  "artifacts": [
+    {
+      "artifact": "device.isa",
+      "sha256": "f27304c4c5177faefd66107bb871829bd2e8dc1a2ebe701365e7e58e34d95bde",
+      "tested_sha256": "f27304c4c5177faefd66107bb871829bd2e8dc1a2ebe701365e7e58e34d95bde",
+      "identical": true
+    },
+    {
+      "artifact": "device.co",
+      "sha256": "bb91697ef424f93138c2aeba916bcb7fbb054bf41dad577786753f9d570bb107",
+      "tested_sha256": "bb91697ef424f93138c2aeba916bcb7fbb054bf41dad577786753f9d570bb107",
+      "identical": true
+    },
+    {
+      "artifact": "libblockscale_bpreshuffle.so",
+      "sha256": "5869aefe608625e5c0c5704dd43f0e5da4df4fdd4b6902860af245bb301b2941",
+      "tested_sha256": "5869aefe608625e5c0c5704dd43f0e5da4df4fdd4b6902860af245bb301b2941",
+      "identical": true
+    },
+    {
+      "artifact": "gemm_a8w8_blockscale_bpreshuffle.exe",
+      "sha256": "4030bc2c8d7df35ea094600cabfe13901673bb8a8fcc1d5f3e479fa9ef12d3bf",
+      "tested_sha256": "4030bc2c8d7df35ea094600cabfe13901673bb8a8fcc1d5f3e479fa9ef12d3bf",
+      "identical": true
+    }
+  ],
+  "correctness_window": "unified_gsfa_mk_lane_bits_gpu2_20260914_0355",
+  "before": {
+    "timestamp_utc": "2026-09-14T03:59:04.157287+00:00",
+    "completed_utc": "2026-09-14T03:59:04.266515+00:00",
+    "physical_gpu": 2,
+    "pci": "0000:65:00.0",
+    "status": {
+      "GPU use (%)": "0",
+      "GFX Activity": "1838576902",
+      "GPU Memory Allocated (VRAM%)": "0",
+      "GPU Memory Read/Write Activity (%)": "0",
+      "Memory Activity": "1759934994",
+      "Avg. Memory Bandwidth": "0",
+      "PCI Bus": "0000:65:00.0"
+    },
+    "idle": true
+  },
+  "defaults": {
+    "dtype": "bf16",
+    "warmup": 200,
+    "iterations": 100,
+    "output_tiles_per_WG": 1
+  },
+  "scope": "User-requested ATT command with only executable/output paths replaced. Frozen current build protects the trace from concurrent workspace edits. Instrumented timing is diagnostic only.",
+  "returncode": -11,
+  "finished": "2026-09-14T03:59:04.945495+00:00",
+  "after": [
+    {
+      "timestamp_utc": "2026-09-14T03:59:04.945524+00:00",
+      "completed_utc": "2026-09-14T03:59:05.090272+00:00",
+      "physical_gpu": 2,
+      "pci": "0000:65:00.0",
+      "status": {
+        "GPU use (%)": "0",
+        "GFX Activity": "1838577455",
+        "GPU Memory Allocated (VRAM%)": "0",
+        "GPU Memory Read/Write Activity (%)": "0",
+        "Memory Activity": "1759934994",
+        "Avg. Memory Bandwidth": "0",
+        "PCI Bus": "0000:65:00.0"
+      },
+      "idle": true
+    }
+  ],
+  "window_status": "COMMAND_FAILED",
+  "files": [
+    {
+      "path": "build_snapshot/device.co",
+      "bytes": 50288
+    },
+    {
+      "path": "build_snapshot/device.isa",
+      "bytes": 592916
+    },
+    {
+      "path": "build_snapshot/gemm_a8w8_blockscale_bpreshuffle.exe",
+      "bytes": 101568
+    },
+    {
+      "path": "build_snapshot/libblockscale_bpreshuffle.so",
+      "bytes": 66976
+    },
+    {
+      "path": "rocprofv3.log",
+      "bytes": 1276
+    },
+    {
+      "path": "source_snapshot/Makefile",
+      "bytes": 2402
+    },
+    {
+      "path": "source_snapshot/blockscale_bpreshuffle.py",
+      "bytes": 4891
+    },
+    {
+      "path": "source_snapshot/gemm_a8w8_blockscale_bpreshuffle_launch.cc",
+      "bytes": 3243
+    },
+    {
+      "path": "source_snapshot/gemm_a8w8_mxfp8_scale_common.h",
+      "bytes": 1365
+    },
+    {
+      "path": "source_snapshot/gemm_a8w8_mxfp8_scale_host.cc",
+      "bytes": 21400
+    },
+    {
+      "path": "source_snapshot/gemm_a8w8_mxfp8_scale_kernel.cc",
+      "bytes": 496
+    },
+    {
+      "path": "source_snapshot/kernel_dispatch.hpp",
+      "bytes": 622
+    },
+    {
+      "path": "source_snapshot/tmpl_generic.hpp",
+      "bytes": 92102
+    },
+    {
+      "path": "source_snapshot/traits.hpp",
+      "bytes": 3627
+    }
+  ]
+}

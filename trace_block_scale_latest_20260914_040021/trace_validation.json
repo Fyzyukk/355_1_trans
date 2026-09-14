@@ -1,0 +1,144 @@
+{
+  "status": "PASS",
+  "candidate": "unified_gsfa_mk_lane_bits",
+  "output_directory": "/root/workspace/gcnasm_new/gcnasm-mxfp8-final-pipeline-source-20260910/opus_gemm/mxfp8_gemm_16x16x128_blockscale_bpreshuffle_4wave/trace_block_scale_latest_20260914_040021",
+  "UI_directory": "ui_output_agent_36221_dispatch_2",
+  "physical_gpu": 2,
+  "pci": "0000:65:00.0",
+  "agent": {
+    "type": "GPU",
+    "name": "gfx950",
+    "handle": 36221,
+    "pci": "0000:65:00.0",
+    "gfx_target": 90500
+  },
+  "waves": [
+    {
+      "file": "se0_sm0_sl0_wv0.json",
+      "mfma_count": 4096,
+      "instruction_count": 9858,
+      "num_insts": 9858,
+      "num_stitched": 9858
+    },
+    {
+      "file": "se0_sm0_sl0_wv1.json",
+      "mfma_count": 4096,
+      "instruction_count": 9848,
+      "num_insts": 9848,
+      "num_stitched": 9848
+    },
+    {
+      "file": "se0_sm0_sl0_wv2.json",
+      "mfma_count": 4096,
+      "instruction_count": 9848,
+      "num_insts": 9848,
+      "num_stitched": 9848
+    },
+    {
+      "file": "se0_sm0_sl0_wv3.json",
+      "mfma_count": 4096,
+      "instruction_count": 9858,
+      "num_insts": 9858,
+      "num_stitched": 9858
+    },
+    {
+      "file": "se0_sm1_sl0_wv0.json",
+      "mfma_count": 4096,
+      "instruction_count": 9848,
+      "num_insts": 9848,
+      "num_stitched": 9848
+    },
+    {
+      "file": "se0_sm1_sl0_wv1.json",
+      "mfma_count": 4096,
+      "instruction_count": 9858,
+      "num_insts": 9858,
+      "num_stitched": 9858
+    },
+    {
+      "file": "se0_sm1_sl0_wv2.json",
+      "mfma_count": 4096,
+      "instruction_count": 9858,
+      "num_insts": 9858,
+      "num_stitched": 9858
+    },
+    {
+      "file": "se0_sm1_sl0_wv3.json",
+      "mfma_count": 4096,
+      "instruction_count": 9848,
+      "num_insts": 9848,
+      "num_stitched": 9848
+    },
+    {
+      "file": "se0_sm2_sl0_wv0.json",
+      "mfma_count": 4096,
+      "instruction_count": 9858,
+      "num_insts": 9858,
+      "num_stitched": 9858
+    },
+    {
+      "file": "se0_sm2_sl0_wv1.json",
+      "mfma_count": 4096,
+      "instruction_count": 9858,
+      "num_insts": 9858,
+      "num_stitched": 9858
+    },
+    {
+      "file": "se0_sm2_sl0_wv2.json",
+      "mfma_count": 4096,
+      "instruction_count": 9848,
+      "num_insts": 9848,
+      "num_stitched": 9848
+    },
+    {
+      "file": "se0_sm2_sl0_wv3.json",
+      "mfma_count": 4096,
+      "instruction_count": 9848,
+      "num_insts": 9848,
+      "num_stitched": 9848
+    },
+    {
+      "file": "se0_sm3_sl0_wv0.json",
+      "mfma_count": 4096,
+      "instruction_count": 9848,
+      "num_insts": 9848,
+      "num_stitched": 9848
+    },
+    {
+      "file": "se0_sm3_sl0_wv1.json",
+      "mfma_count": 4096,
+      "instruction_count": 9848,
+      "num_insts": 9848,
+      "num_stitched": 9848
+    },
+    {
+      "file": "se0_sm3_sl0_wv2.json",
+      "mfma_count": 4096,
+      "instruction_count": 9858,
+      "num_insts": 9858,
+      "num_stitched": 9858
+    },
+    {
+      "file": "se0_sm3_sl0_wv3.json",
+      "mfma_count": 4096,
+      "instruction_count": 9858,
+      "num_insts": 9858,
+      "num_stitched": 9858
+    }
+  ],
+  "wave_count": 16,
+  "mfmas_per_wave": 4096,
+  "shape": [
+    8192,
+    8192,
+    8192
+  ],
+  "dtype": "bf16",
+  "output_tiles_per_WG": 1,
+  "raw_code_object": "08b495a2814a/744511_gfx950_code_object_id_2.out",
+  "code_object_sha256": "bb91697ef424f93138c2aeba916bcb7fbb054bf41dad577786753f9d570bb107",
+  "code_object_matches_latest_build": true,
+  "source_sha256": "7bfc4e877d1747d53e4d460872d897450b44868c76eba3fbe70e3d4da9f817f2",
+  "command_record": "command.json",
+  "note": "Dispatch1 has no decoded waves; dispatch2 contains the GEMM. Captured output is diagnostic ATT data, not a new performance measurement."
+}
