@@ -1,0 +1,48 @@
+W1027 01:00:09.834323 3413379 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.170873 sec
+W1027 01:00:09.834644 3413379 simple_timer.cpp:55] [rocprofv3] 'python3 reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/capture.py --layout tn' ::     0.000000 sec
+W1027 01:00:11.731792 3413544 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.171567 sec
+W1027 01:00:11.732077 3413544 simple_timer.cpp:55] [rocprofv3] '/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/bin/hipconfig --version' ::     0.000000 sec
+W1027 01:00:11.983818 3413548 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.171338 sec
+W1027 01:00:11.984091 3413548 simple_timer.cpp:55] [rocprofv3] 'sh -c -- /opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++ --version' ::     0.000000 sec
+W1027 01:00:12.236864 3413552 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.172466 sec
+W1027 01:00:12.237152 3413552 simple_timer.cpp:55] [rocprofv3] '/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++ --version' ::     0.000000 sec
+W1027 01:00:12.494697 3413552 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.173557 sec
+W1027 01:00:12.494962 3413552 simple_timer.cpp:55] [rocprofv3] '/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++ --version' ::     0.000000 sec
+W1027 01:00:12.748013 3413552 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.170856 sec
+W1027 01:00:12.748291 3413552 simple_timer.cpp:55] [rocprofv3] '/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++ --version' ::     0.000000 sec
+W1027 01:00:12.749634 3413552 simple_timer.cpp:55] [rocprofv3] '/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++ --version' ::     0.001343 sec
+E1027 01:00:12.749917 3413552 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_config.json
+W1027 01:00:12.752019 3413552 simple_timer.cpp:55] [rocprofv3] output generation ::     0.002305 sec
+W1027 01:00:12.752138 3413552 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.002480 sec
+W1027 01:00:12.763068 3413544 simple_timer.cpp:55] [rocprofv3] '/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/bin/hipconfig --version' ::     1.030990 sec
+E1027 01:00:12.763348 3413544 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_config.json
+W1027 01:00:12.765508 3413544 simple_timer.cpp:55] [rocprofv3] output generation ::     0.002323 sec
+W1027 01:00:12.765628 3413544 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.002522 sec
+W1027 01:00:13.387852 3413379 tool.cpp:3082] HIP (runtime) version 7.14.0 initialized (instance=0)
+W1027 01:00:13.632546 3413379 tool.cpp:3082] HSA version 1.21.0 initialized (instance=0)
+[aiter] import [module_aiter_core] under /root/workspace/aiter-opus-upstream-compare-20261016T171653Z/aiter/jit/module_aiter_core.so
+W1027 01:00:15.764645 3413379 tool.cpp:3082] MARKER (ROCTx) version 1.3.2 initialized (instance=0)
+E1027 01:00:15.777931 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_gfx950_code_object_id_1.out
+E1027 01:00:15.811043 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_gfx950_code_object_id_2.out
+E1027 01:00:15.836770 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_gfx950_code_object_id_3.out
+E1027 01:00:15.863519 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_gfx950_code_object_id_4.out
+[aiter] import [module_opus_mxfp8_layouts] under /root/workspace/aiter-opus-upstream-compare-20261016T171653Z/aiter/jit/module_opus_mxfp8_layouts.so
+E1027 01:00:15.874395 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_gfx950_code_object_id_5.out
+{"layout": "tn", "shape": [8192, 8192, 8192], "gpu": "AMD Instinct MI355X", "warmup_dispatches": 4, "att_iteration": 5, "output_shape": [8192, 8192]}
+E1027 01:00:15.883682 3413572 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_61871_shader_engine_0_12.att
+W1027 01:00:16.991615 3413379 simple_timer.cpp:55] [rocprofv3] 'python3 reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/capture.py --layout tn' ::     7.156968 sec
+E1027 01:00:17.075172 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_config.json
+E1027 01:00:17.081731 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_kernel_stats.csv
+E1027 01:00:17.081921 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_kernel_trace.csv
+E1027 01:00:17.089610 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_hip_api_stats.csv
+E1027 01:00:17.089773 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_hip_api_trace.csv
+E1027 01:00:17.093372 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_marker_api_stats.csv
+E1027 01:00:17.093513 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_marker_api_trace.csv
+E1027 01:00:17.094130 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_agent_info.csv
+E1027 01:00:17.094274 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_domain_stats.csv
+E1027 01:00:17.094406 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_results.json
+[765.193]       perfetto.cc:47314 Configured tracing session 1, #sources:1, duration:0 ms, #buffers:1, total buffer size:1048576 KB, total sessions:1, uid:0 session name: ""
+E1027 01:00:17.132581 3413379 output_stream.cpp:111] Opened result file: reports/opus_mxfp8_layouts_trace_8192_20261027T005846Z/tn/tn_results.pftrace
+[765.203]       perfetto.cc:48889 Tracing session 1 ended, total sessions:0
+W1027 01:00:17.633943 3413379 simple_timer.cpp:55] [rocprofv3] output generation ::     0.559144 sec
+W1027 01:00:17.635165 3413379 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.560426 sec

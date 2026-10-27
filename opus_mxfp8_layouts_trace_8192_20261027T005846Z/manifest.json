@@ -1,0 +1,367 @@
+{
+  "shape": [
+    8192,
+    8192,
+    8192
+  ],
+  "physical_gpu": 4,
+  "gpu_model": "AMD Instinct MI355X",
+  "rocprofv3_version": "1.3.2",
+  "att_target_cu": 1,
+  "shader_engine_mask": "0x1",
+  "simd_mask": "0xF",
+  "activity_interval": 8,
+  "warmup_dispatches": 4,
+  "att_iteration": 5,
+  "shared_gpu": true,
+  "layouts": [
+    {
+      "layout": "nt",
+      "kernel_symbol": "opus_gemm_gfx950_4wave_pin_agpr_co_256x256x256x128_2x2_16x16x128_1x128x128_pm0_sp64_k0_u2",
+      "gemm_dispatches": 5,
+      "target_dispatch_id": 13,
+      "ui_output": "nt/ui_output_agent_26487_dispatch_13",
+      "perfetto": "nt/nt_results.pftrace",
+      "raw_att": "nt/nt_26487_shader_engine_0_13.att",
+      "raw_att_bytes": 2245032,
+      "code_object": "csrc/opus_gemm/gen_co/gfx950/opus_gemm_gfx950_4wave_pin_agpr_co_256x256x256x128_2x2_16x16x128_1x128x128_pm0_sp64_k0_u2.co",
+      "co_sha256": "395038ff2240708a0a7d81155de0eb470ee800bf53bdd4395cd1936ad3b2173b",
+      "wave_count": 16,
+      "all_instructions_stitched": true,
+      "mfma_hitcount": 65536,
+      "waves": [
+        {
+          "file": "se0_sm0_sl0_wv0.json",
+          "instructions": 10205,
+          "duration_cycles": 150656
+        },
+        {
+          "file": "se0_sm0_sl0_wv1.json",
+          "instructions": 10199,
+          "duration_cycles": 147696
+        },
+        {
+          "file": "se0_sm0_sl0_wv2.json",
+          "instructions": 10199,
+          "duration_cycles": 147732
+        },
+        {
+          "file": "se0_sm0_sl0_wv3.json",
+          "instructions": 10205,
+          "duration_cycles": 148052
+        },
+        {
+          "file": "se0_sm1_sl0_wv0.json",
+          "instructions": 10199,
+          "duration_cycles": 150840
+        },
+        {
+          "file": "se0_sm1_sl0_wv1.json",
+          "instructions": 10205,
+          "duration_cycles": 147768
+        },
+        {
+          "file": "se0_sm1_sl0_wv2.json",
+          "instructions": 10205,
+          "duration_cycles": 147752
+        },
+        {
+          "file": "se0_sm1_sl0_wv3.json",
+          "instructions": 10199,
+          "duration_cycles": 148128
+        },
+        {
+          "file": "se0_sm2_sl0_wv0.json",
+          "instructions": 10205,
+          "duration_cycles": 150780
+        },
+        {
+          "file": "se0_sm2_sl0_wv1.json",
+          "instructions": 10205,
+          "duration_cycles": 147768
+        },
+        {
+          "file": "se0_sm2_sl0_wv2.json",
+          "instructions": 10199,
+          "duration_cycles": 147740
+        },
+        {
+          "file": "se0_sm2_sl0_wv3.json",
+          "instructions": 10199,
+          "duration_cycles": 148000
+        },
+        {
+          "file": "se0_sm3_sl0_wv0.json",
+          "instructions": 10199,
+          "duration_cycles": 150840
+        },
+        {
+          "file": "se0_sm3_sl0_wv1.json",
+          "instructions": 10199,
+          "duration_cycles": 147792
+        },
+        {
+          "file": "se0_sm3_sl0_wv2.json",
+          "instructions": 10205,
+          "duration_cycles": 147752
+        },
+        {
+          "file": "se0_sm3_sl0_wv3.json",
+          "instructions": 10205,
+          "duration_cycles": 148116
+        }
+      ]
+    },
+    {
+      "layout": "tt",
+      "kernel_symbol": "opus_gemm_mxfp8_tt_4wave_co",
+      "gemm_dispatches": 5,
+      "target_dispatch_id": 13,
+      "ui_output": "tt/ui_output_agent_59969_dispatch_13",
+      "perfetto": "tt/tt_results.pftrace",
+      "raw_att": "tt/tt_59969_shader_engine_0_13.att",
+      "raw_att_bytes": 4404488,
+      "code_object": "csrc/opus_gemm/gen_co/gfx950/opus_gemm_mxfp8_tt_4wave_co.co",
+      "co_sha256": "0236f609c986c45d009b2c7a312fb2ba51e22e96dec3c959983a84316963de4f",
+      "wave_count": 16,
+      "all_instructions_stitched": true,
+      "mfma_hitcount": 65536,
+      "waves": [
+        {
+          "file": "se0_sm0_sl0_wv0.json",
+          "instructions": 18030,
+          "duration_cycles": 361556
+        },
+        {
+          "file": "se0_sm0_sl0_wv1.json",
+          "instructions": 18030,
+          "duration_cycles": 345824
+        },
+        {
+          "file": "se0_sm0_sl0_wv2.json",
+          "instructions": 18030,
+          "duration_cycles": 346080
+        },
+        {
+          "file": "se0_sm0_sl0_wv3.json",
+          "instructions": 18030,
+          "duration_cycles": 346816
+        },
+        {
+          "file": "se0_sm1_sl0_wv0.json",
+          "instructions": 18030,
+          "duration_cycles": 361552
+        },
+        {
+          "file": "se0_sm1_sl0_wv1.json",
+          "instructions": 18030,
+          "duration_cycles": 345836
+        },
+        {
+          "file": "se0_sm1_sl0_wv2.json",
+          "instructions": 18030,
+          "duration_cycles": 346088
+        },
+        {
+          "file": "se0_sm1_sl0_wv3.json",
+          "instructions": 18030,
+          "duration_cycles": 346812
+        },
+        {
+          "file": "se0_sm2_sl0_wv0.json",
+          "instructions": 18030,
+          "duration_cycles": 361556
+        },
+        {
+          "file": "se0_sm2_sl0_wv1.json",
+          "instructions": 18030,
+          "duration_cycles": 345840
+        },
+        {
+          "file": "se0_sm2_sl0_wv2.json",
+          "instructions": 18030,
+          "duration_cycles": 346080
+        },
+        {
+          "file": "se0_sm2_sl0_wv3.json",
+          "instructions": 18030,
+          "duration_cycles": 346816
+        },
+        {
+          "file": "se0_sm3_sl0_wv0.json",
+          "instructions": 18030,
+          "duration_cycles": 361548
+        },
+        {
+          "file": "se0_sm3_sl0_wv1.json",
+          "instructions": 18030,
+          "duration_cycles": 345832
+        },
+        {
+          "file": "se0_sm3_sl0_wv2.json",
+          "instructions": 18030,
+          "duration_cycles": 346088
+        },
+        {
+          "file": "se0_sm3_sl0_wv3.json",
+          "instructions": 18030,
+          "duration_cycles": 346824
+        }
+      ]
+    },
+    {
+      "layout": "nn",
+      "kernel_symbol": "opus_gemm_mxfp8_nn_4wave_co",
+      "gemm_dispatches": 5,
+      "target_dispatch_id": 11,
+      "ui_output": "nn/ui_output_agent_53036_dispatch_11",
+      "perfetto": "nn/nn_results.pftrace",
+      "raw_att": "nn/nn_53036_shader_engine_0_11.att",
+      "raw_att_bytes": 3572008,
+      "code_object": "csrc/opus_gemm/gen_co/gfx950/opus_gemm_mxfp8_nn_4wave_co.co",
+      "co_sha256": "001a92235dd9e5944e69b8bd2d57af2a4eac099e5c53fa0c213195d353d57971",
+      "wave_count": 12,
+      "all_instructions_stitched": true,
+      "mfma_hitcount": 49152,
+      "waves": [
+        {
+          "file": "se0_sm0_sl0_wv0.json",
+          "instructions": 15839,
+          "duration_cycles": 393076
+        },
+        {
+          "file": "se0_sm0_sl0_wv1.json",
+          "instructions": 15839,
+          "duration_cycles": 388460
+        },
+        {
+          "file": "se0_sm0_sl0_wv2.json",
+          "instructions": 15839,
+          "duration_cycles": 393644
+        },
+        {
+          "file": "se0_sm1_sl0_wv0.json",
+          "instructions": 15839,
+          "duration_cycles": 393088
+        },
+        {
+          "file": "se0_sm1_sl0_wv1.json",
+          "instructions": 15839,
+          "duration_cycles": 388456
+        },
+        {
+          "file": "se0_sm1_sl0_wv2.json",
+          "instructions": 15839,
+          "duration_cycles": 393640
+        },
+        {
+          "file": "se0_sm2_sl0_wv0.json",
+          "instructions": 15839,
+          "duration_cycles": 393084
+        },
+        {
+          "file": "se0_sm2_sl0_wv1.json",
+          "instructions": 15839,
+          "duration_cycles": 388456
+        },
+        {
+          "file": "se0_sm2_sl0_wv2.json",
+          "instructions": 15839,
+          "duration_cycles": 393640
+        },
+        {
+          "file": "se0_sm3_sl0_wv0.json",
+          "instructions": 15839,
+          "duration_cycles": 393084
+        },
+        {
+          "file": "se0_sm3_sl0_wv1.json",
+          "instructions": 15839,
+          "duration_cycles": 388460
+        },
+        {
+          "file": "se0_sm3_sl0_wv2.json",
+          "instructions": 15839,
+          "duration_cycles": 393628
+        }
+      ]
+    },
+    {
+      "layout": "tn",
+      "kernel_symbol": "opus_gemm_mxfp8_tn_4wave_co",
+      "gemm_dispatches": 5,
+      "target_dispatch_id": 12,
+      "ui_output": "tn/ui_output_agent_61871_dispatch_12",
+      "perfetto": "tn/tn_results.pftrace",
+      "raw_att": "tn/tn_61871_shader_engine_0_12.att",
+      "raw_att_bytes": 3931880,
+      "code_object": "csrc/opus_gemm/gen_co/gfx950/opus_gemm_mxfp8_tn_4wave_co.co",
+      "co_sha256": "76aca3105fadb204a04bc198fa38d637f00f5570d077c2047f7e9a89404428f3",
+      "wave_count": 12,
+      "all_instructions_stitched": true,
+      "mfma_hitcount": 49152,
+      "waves": [
+        {
+          "file": "se0_sm0_sl0_wv0.json",
+          "instructions": 20226,
+          "duration_cycles": 396816
+        },
+        {
+          "file": "se0_sm0_sl0_wv1.json",
+          "instructions": 20226,
+          "duration_cycles": 428840
+        },
+        {
+          "file": "se0_sm0_sl4_wv0.json",
+          "instructions": 20226,
+          "duration_cycles": 419964
+        },
+        {
+          "file": "se0_sm1_sl0_wv0.json",
+          "instructions": 20226,
+          "duration_cycles": 396824
+        },
+        {
+          "file": "se0_sm1_sl0_wv1.json",
+          "instructions": 20226,
+          "duration_cycles": 428840
+        },
+        {
+          "file": "se0_sm1_sl4_wv0.json",
+          "instructions": 20226,
+          "duration_cycles": 419956
+        },
+        {
+          "file": "se0_sm2_sl0_wv0.json",
+          "instructions": 20226,
+          "duration_cycles": 396832
+        },
+        {
+          "file": "se0_sm2_sl0_wv1.json",
+          "instructions": 20226,
+          "duration_cycles": 428828
+        },
+        {
+          "file": "se0_sm2_sl4_wv0.json",
+          "instructions": 20226,
+          "duration_cycles": 419964
+        },
+        {
+          "file": "se0_sm3_sl0_wv0.json",
+          "instructions": 20226,
+          "duration_cycles": 396824
+        },
+        {
+          "file": "se0_sm3_sl0_wv1.json",
+          "instructions": 20226,
+          "duration_cycles": 428840
+        },
+        {
+          "file": "se0_sm3_sl4_wv0.json",
+          "instructions": 20226,
+          "duration_cycles": 419956
+        }
+      ]
+    }
+  ]
+}
