@@ -1,0 +1,23 @@
+{
+  "shape": [
+    8192,
+    8192,
+    8192
+  ],
+  "layout": "nn",
+  "gpu": "MI355X GPU2",
+  "dispatch_id": 9,
+  "sampled_dispatch_duration_us": 469.564,
+  "decoded_waves": 16,
+  "steady_period_median_of_wave_medians": 2480.0,
+  "mfma_issue_gap_median": 32,
+  "steady_agpr_vgpr_moves": 0,
+  "representative_wave": "/tmp/opus_mxfp8_layout_skill_20261103/nn8192_rocprof_20261103T015417Z/trace/ui_output_agent_38563_dispatch_9/se0_sm0_sl0_wv0.json",
+  "representative_k128_tile_index": 31,
+  "representative_period_cycles": 2480,
+  "representative_waitcnt_duration_sum": 132,
+  "representative_barrier_duration_sum": 68,
+  "representative_last_ds_mfma_position": 64,
+  "chart": "/tmp/opus_mxfp8_layout_skill_20261103/nn8192_rocprof_20261103T015417Z/nn8192_k128.png",
+  "original_att": "/tmp/opus_mxfp8_layout_skill_20261103/nn8192_rocprof_20261103T015417Z/trace/nn8192_38563_shader_engine_0_9.att"
+}
