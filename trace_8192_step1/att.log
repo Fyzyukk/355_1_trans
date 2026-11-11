@@ -1,0 +1,24 @@
+[0;33mW20261111 15:37:49.268367 140460359892672 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.025848 sec
+[m[0;33mW20261111 15:37:49.268699 140460359892672 simple_timer.cpp:55] [rocprofv3] '/root/workspace/scratch_mxfp4/prof/launch /root/workspace/mxfp4_gemm_4wave/trace_8192_step1/kernel_gfx950.co 8192 8192 8192 2 _Z28gemm_a4w4_mxfp4_4wave_kernelI28gemm_a4w4_mxfp4_4wave_traitsEv27opus_gemm_mxfp4_scale_kargs' ::     0.000000 sec
+[m[0;33mW20261111 15:37:50.168942 140460359892672 tool.cpp:2158] HSA version 8.18.0 initialized (instance=0)
+[m[0;31mE20261111 15:37:50.257880 140460359892672 output_stream.cpp:111] Opened result file: att/run_gfx950_code_object_id_1.out
+[m[0;31mE20261111 15:37:50.267354 140460359892672 output_stream.cpp:111] Opened result file: att/run_gfx950_code_object_id_2.out
+[m[0;33mW20261111 15:37:50.275813 140460359892672 simple_timer.cpp:55] [rocprofv3] '/root/workspace/scratch_mxfp4/prof/launch /root/workspace/mxfp4_gemm_4wave/trace_8192_step1/kernel_gfx950.co 8192 8192 8192 2 _Z28gemm_a4w4_mxfp4_4wave_kernelI28gemm_a4w4_mxfp4_4wave_traitsEv27opus_gemm_mxfp4_scale_kargs' ::     1.007115 sec
+[m[0;31mE20261111 15:37:50.288134 140460339226176 output_stream.cpp:111] Opened result file: att/run_20361_shader_engine_0_1.att
+[m[0;33mW20261111 15:37:50.363826 140460359892672 generateRocpd.cpp:580] writing SQL database for process 3804831 on node 3758925582
+[m[0;31mE20261111 15:37:50.364339 140460359892672 generateRocpd.cpp:603] Opened result file: att/run_results.db (UUID=00009611-047e-747e-8f73-be71ef1b43d3)
+[m[0;33mW20261111 15:37:50.386862 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_string             ::     0.005086 sec
+[m[0;33mW20261111 15:37:50.387114 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_info_node          ::     0.000239 sec
+[m[0;33mW20261111 15:37:50.387682 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_info_process       ::     0.000560 sec
+[m[0;33mW20261111 15:37:50.395090 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_info_agent         ::     0.007026 sec
+[m[0;33mW20261111 15:37:50.395103 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_info_pmc           ::     0.000003 sec
+[m[0;33mW20261111 15:37:50.395611 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd kernel info        ::     0.000499 sec
+[m[0;33mW20261111 15:37:50.395621 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_region             ::     0.000001 sec
+[m[0;33mW20261111 15:37:50.395627 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_kernel_dispatch    ::     0.000000 sec
+[m[0;33mW20261111 15:37:50.395635 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_pmc_event          ::     0.000000 sec
+[m[0;33mW20261111 15:37:50.395641 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_memory_copy        ::     0.000000 sec
+[m[0;33mW20261111 15:37:50.395649 140460359892672 simple_timer.cpp:55] SQLite3 generation :: rocpd_memory_allocate    ::     0.000000 sec
+[m[0;33mW20261111 15:37:50.395764 140460359892672 simple_timer.cpp:55] SQLite3 generation :: SQL indexing             ::     0.000107 sec
+[m[0;33mW20261111 15:37:50.396000 140460359892672 simple_timer.cpp:55] SQLite3 generation :: total                    ::     0.032175 sec
+[m[0;33mW20261111 15:37:50.539798 140460359892672 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.181246 sec
+[mdone
