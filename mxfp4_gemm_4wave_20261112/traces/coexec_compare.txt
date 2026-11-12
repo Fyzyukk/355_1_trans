@@ -1,0 +1,99 @@
+== t_s1_idle
+main loop: 256 MFMA per trip, 240 trips(hits), total 5177 cycles/trip, ideal 4096 -> MFMA pipe busy 79.1%
+MFMA 间隔分布: {'17-24': 51, '25-32': 51, '33-64': 23, '=16(满)': 130, '>64': 1}
+总的多出时间 1081 cycles/trip，按原因：
+   buffer_load                          442  (41%)
+   ds_read                              269  (25%)
+   SALU                                 184  (17%)
+   MFMA 自身停顿(等前一条MFMA/依赖)               147  (14%)
+   VALU                                 145  (13%)
+   permlane                             112  (10%)
+   barrier                               72  (7%)
+   waitcnt                               42  (4%)
+   s_nop                                 35  (3%)
+每对 MFMA（同一个 C 的 kk=0,1）总时间分布: {'33-40': 8, '41-64': 62, '=32(满)': 50, '>64': 8}
+最差的 10 处（MFMA 后面跟的指令）:
+   gap   75.0: v_mfma_scale_f32_16x16x128_f8f6f4(15) | s_addk_i32(4) | s_cmp_lg_u32(4) | s_cselect_b32(4) | s_add_i32(4) | s_add_i32(5) | s_nop(4) | buffer_load_dwordx4(35)
+   gap   56.4: v_mfma_scale_f32_16x16x128_f8f6f4(12) | buffer_load_dwordx4(35) | v_add_u32_e32(4) | s_mov_b32(5)
+   gap   50.3: v_mfma_scale_f32_16x16x128_f8f6f4(11) | buffer_load_dwordx4(35) | s_mov_b32(4)
+   gap   49.2: v_mfma_scale_f32_16x16x128_f8f6f4(16) | s_waitcnt(4) | s_barrier(29)
+   gap   49.2: v_mfma_scale_f32_16x16x128_f8f6f4(20) | buffer_load_dwordx4(24) | s_mov_b32(5)
+   gap   45.5: v_mfma_scale_f32_16x16x128_f8f6f4(16) | buffer_load_dwordx4(24) | s_mov_b32(5)
+   gap   43.0: v_mfma_scale_f32_16x16x128_f8f6f4(15) | s_waitcnt(4) | s_barrier(24)
+   gap   42.7: v_mfma_scale_f32_16x16x128_f8f6f4(14) | s_lshl_b32(4) | s_add_i32(5) | s_nop(4) | buffer_load_dwordx4(16)
+   gap   40.5: v_mfma_scale_f32_16x16x128_f8f6f4(25) | buffer_load_dwordx4(11) | s_mov_b32(5)
+   gap   40.3: v_mfma_scale_f32_16x16x128_f8f6f4(11) | buffer_load_dwordx4(25) | s_mov_b32(4)
+== t_m3
+main loop: 256 MFMA per trip, 240 trips(hits), total 5151 cycles/trip, ideal 4096 -> MFMA pipe busy 79.5%
+MFMA 间隔分布: {'17-24': 37, '25-32': 58, '33-64': 21, '=16(满)': 140}
+总的多出时间 1055 cycles/trip，按原因：
+   ds_read                              430  (41%)
+   buffer_load                          334  (32%)
+   SALU                                 182  (17%)
+   MFMA 自身停顿(等前一条MFMA/依赖)               161  (15%)
+   VALU                                  88  (8%)
+   barrier                               81  (8%)
+   permlane                              71  (7%)
+   ds_write                              34  (3%)
+   waitcnt                               26  (2%)
+   s_nop                                 15  (1%)
+每对 MFMA（同一个 C 的 kk=0,1）总时间分布: {'33-40': 4, '41-64': 65, '=32(满)': 56, '>64': 3}
+最差的 10 处（MFMA 后面跟的指令）:
+   gap   57.4: v_mfma_scale_f32_16x16x128_f8f6f4(16) | s_waitcnt(4) | s_barrier(38)
+   gap   51.3: v_mfma_scale_f32_16x16x128_f8f6f4(8) | v_perm_b32(8) | buffer_load_dwordx4(14) | ds_write_b128(21)
+   gap   50.0: v_mfma_scale_f32_16x16x128_f8f6f4(8) | v_perm_b32(8) | buffer_load_dwordx4(13) | ds_write_b128(21)
+   gap   45.4: v_mfma_scale_f32_16x16x128_f8f6f4(15) | s_waitcnt(5) | s_barrier(26)
+   gap   41.4: v_mfma_scale_f32_16x16x128_f8f6f4(12) | buffer_load_dwordx4(25) | s_mov_b32(5)
+   gap   40.6: v_mfma_scale_f32_16x16x128_f8f6f4(19) | buffer_load_dwordx4(17) | s_mov_b32(5)
+   gap   39.4: v_mfma_scale_f32_16x16x128_f8f6f4(11) | buffer_load_dwordx4(19) | v_add_u32_e32(4) | s_mov_b32(5)
+   gap   39.2: v_mfma_scale_f32_16x16x128_f8f6f4(19) | buffer_load_dwordx4(15) | s_mov_b32(5)
+   gap   39.0: v_mfma_scale_f32_16x16x128_f8f6f4(16) | buffer_load_dwordx4(18) | s_mov_b32(5)
+   gap   38.5: v_mfma_scale_f32_16x16x128_f8f6f4(18) | ds_read_b128(16) | s_waitcnt(4)
+== t_m4
+main loop: 256 MFMA per trip, 240 trips(hits), total 5348 cycles/trip, ideal 4096 -> MFMA pipe busy 76.6%
+MFMA 间隔分布: {'17-24': 33, '25-32': 54, '33-64': 24, '=16(满)': 143, '>64': 2}
+总的多出时间 1252 cycles/trip，按原因：
+   ds_read                              655  (52%)
+   buffer_load                          355  (28%)
+   SALU                                 183  (15%)
+   MFMA 自身停顿(等前一条MFMA/依赖)               183  (15%)
+   VALU                                  89  (7%)
+   barrier                               86  (7%)
+   waitcnt                               35  (3%)
+   ds_write                              35  (3%)
+每对 MFMA（同一个 C 的 kk=0,1）总时间分布: {'33-40': 7, '41-64': 59, '=32(满)': 55, '>64': 7}
+最差的 10 处（MFMA 后面跟的指令）:
+   gap  122.9: v_mfma_scale_f32_16x16x128_f8f6f4(20) | ds_read_b128(103)
+   gap  111.8: v_mfma_scale_f32_16x16x128_f8f6f4(20) | ds_read_b128(92)
+   gap   57.6: v_mfma_scale_f32_16x16x128_f8f6f4(16) | s_waitcnt(4) | s_barrier(38)
+   gap   50.7: v_mfma_scale_f32_16x16x128_f8f6f4(15) | s_waitcnt(5) | s_barrier(31)
+   gap   47.6: v_mfma_scale_f32_16x16x128_f8f6f4(8) | v_perm_b32(8) | buffer_load_dwordx4(10) | ds_write_b128(22)
+   gap   47.0: v_mfma_scale_f32_16x16x128_f8f6f4(8) | v_perm_b32(8) | buffer_load_dwordx4(9) | ds_write_b128(22)
+   gap   43.5: v_mfma_scale_f32_16x16x128_f8f6f4(11) | buffer_load_dwordx4(23) | v_add_u32_e32(4) | s_mov_b32(5)
+   gap   43.3: v_mfma_scale_f32_16x16x128_f8f6f4(19) | buffer_load_dwordx4(19) | s_mov_b32(5)
+   gap   41.5: v_mfma_scale_f32_16x16x128_f8f6f4(12) | buffer_load_dwordx4(25) | s_mov_b32(5)
+   gap   40.8: v_mfma_scale_f32_16x16x128_f8f6f4(17) | buffer_load_dwordx4(19) | s_mov_b32(5)
+== t_m5
+main loop: 256 MFMA per trip, 240 trips(hits), total 5292 cycles/trip, ideal 4096 -> MFMA pipe busy 77.4%
+MFMA 间隔分布: {'17-24': 42, '25-32': 48, '33-64': 21, '=16(满)': 143, '>64': 2}
+总的多出时间 1196 cycles/trip，按原因：
+   ds_read                              714  (60%)
+   buffer_load                          367  (31%)
+   MFMA 自身停顿(等前一条MFMA/依赖)               188  (16%)
+   SALU                                  85  (7%)
+   barrier                               85  (7%)
+   VALU                                  84  (7%)
+   ds_write                              38  (3%)
+   waitcnt                               34  (3%)
+每对 MFMA（同一个 C 的 kk=0,1）总时间分布: {'33-40': 8, '41-64': 56, '=32(满)': 55, '>64': 9}
+最差的 10 处（MFMA 后面跟的指令）:
+   gap  149.9: v_mfma_scale_f32_16x16x128_f8f6f4(19) | ds_read_b128(131)
+   gap  139.8: v_mfma_scale_f32_16x16x128_f8f6f4(19) | ds_read_b128(120)
+   gap   59.2: v_mfma_scale_f32_16x16x128_f8f6f4(15) | s_waitcnt(4) | s_barrier(40)
+   gap   49.7: v_mfma_scale_f32_16x16x128_f8f6f4(8) | v_perm_b32(8) | buffer_load_dwordx4(8) | ds_write_b128(25)
+   gap   48.4: v_mfma_scale_f32_16x16x128_f8f6f4(8) | v_perm_b32(8) | buffer_load_dwordx4(11) | ds_write_b128(22)
+   gap   48.0: v_mfma_scale_f32_16x16x128_f8f6f4(12) | buffer_load_dwordx4(36)
+   gap   47.7: v_mfma_scale_f32_16x16x128_f8f6f4(16) | s_waitcnt(4) | s_barrier(28)
+   gap   40.7: v_mfma_scale_f32_16x16x128_f8f6f4(19) | buffer_load_dwordx4(21)
+   gap   39.2: v_mfma_scale_f32_16x16x128_f8f6f4(12) | buffer_load_dwordx4(17) | v_add_u32_e32(4) | v_add_u32_e32(6)
+   gap   39.0: v_mfma_scale_f32_16x16x128_f8f6f4(11) | buffer_load_dwordx4(28)
