@@ -222,6 +222,7 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
     using SFRAW_B = opus::vector_t<opus::u32_t, 2>;
     SFRAW_A sfa_raw; SFRAW_B sfb_raw;
     unsigned int v_sfa[4][2], v_sfb[2], v_sfbn[2];
+    unsigned int sfr_a[2][8], sfr_b[2][2];   // V9_SFR: raw scale dwords by K-tile parity, used directly (opsel picks the byte)
     int pbase = 0;           // V4: panel buffer parity of this tile's panel 0
     int pend = 0;            // V4: s_c holds the previous tile's bottom half, stored in this tile's first trip
     D_C* pend_ptr = reinterpret_cast<D_C*>(kargs.ptr_c);
@@ -383,21 +384,39 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
         opus::static_for<8>([&](auto j) { sfa_raw[j.value] = load<1>(s_sfa32, base + j.value * 128)[0]; });
         opus::static_for<2>([&](auto j) { sfb_raw[j.value] = load<1>(s_sfb32, base + (2 * wave_id + j.value) * 128)[0]; });
     };
+    auto read_sfr = [&](auto par_, int kt) {   // V9_SFR: raw dwords of K tile kt into parity buffer PAR
+        constexpr int PAR = decltype(par_)::value;
+        const int base = ((((kt >> 1) + pbase) & 1) * (PANEL / 4)) + (kt & 1) * 64 + lane_id;
+        opus::static_for<8>([&](auto j) { sfr_a[PAR][j.value] = load<1>(s_sfa32, base + j.value * 128)[0]; });
+        opus::static_for<2>([&](auto j) { sfr_b[PAR][j.value] = load<1>(s_sfb32, base + (2 * wave_id + j.value) * 128)[0]; });
+    };
     if (!prefetched) {
         pbase = 0;
         copy_a(0, 0, 0, number<false>{}); copy_a(0, 1, 0, number<false>{});
         copy_panel(0, number<false>{});
         __builtin_amdgcn_sched_barrier(0);
         copy_b(number<0>{}, number<0>{}, number<4>{}, 0, number<false>{});
+#ifdef V9_BST
+        copy_b(number<1>{}, number<0>{}, number<2>{}, 1, number<false>{});   // B(1) e0, e1 (K tile 0's q3 would have sent them)
+#endif
         __builtin_amdgcn_sched_barrier(0);
         copy_a(1, 0, 1, number<false>{});
         __builtin_amdgcn_sched_barrier(0);
+#ifdef V9_BST
+        s_waitcnt_vmcnt(number<T::a_buffer_load_insts + 12>{});  // B(0), B(1) e0 e1, A(1) half 0 may fly
+#else
         s_waitcnt_vmcnt(number<T::a_buffer_load_insts + 8>{});   // B(0) + A(1) half 0 may fly
+#endif
         __builtin_amdgcn_s_barrier();
         __builtin_amdgcn_sched_barrier(0);
+#ifdef V9_SFR
+        read_sfr(number<0>{}, 0);
+        load_aq(number<0>{}, number<0>{}, 0);
+#else
         read_sf_k(0);
         load_aq(number<0>{}, number<0>{}, 0);
         gather_a(number<0>{}); gather_a(number<1>{}); gather_a(number<2>{}); gather_b();
+#endif
         __builtin_amdgcn_sched_barrier(0);
     }
 #ifdef DBG_TW
@@ -511,20 +530,172 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
         sched_q3g();
         __builtin_amdgcn_sched_barrier(0);
     };
+
+    // ===== V9 K tile: V9_SFR raw-scale opsel (no v_perm), V9_BST B staggered (e0 e1 of B(t+2) in q3(t) after
+    // their last use, e2 e3 of B(t+1) in q1(t)) + panel copy in q2 =====
+    // V10: one bottom-half copy of the previous tile per K tile (t < 16), spread instead of a burst in the first trip
+    auto pend_one = [&](int t) {
+        const int ii = min(t, 15);
+        auto g_cp = make_gmem(reinterpret_cast<D_C*>(kargs.ptr_c), (pend && t < 16) ? 0xffffffffu : 0u);
+        const auto v = load<8>(s_c, cpy_lds + ii * 8 * C_STRIDE);
+        store<8>(g_cp, v, cpy_g, pend_soff + (T::HALF_B_M + ii * 8) * kargs.stride_c, opus::number<2>{});
+    };
+    auto ktile9 = [&](auto p_, auto first_, int t, auto last_) {
+        constexpr int P = decltype(p_)::value;
+        constexpr bool FIRST = decltype(first_)::value;
+        constexpr bool LAST = decltype(last_)::value;
+        constexpr auto NX1 = number<LAST && P == 1>{};
+        constexpr auto NX2 = number<LAST>{};
+        constexpr bool ZC = FIRST && P == 0;
+        // one (m, n) pair (kk 0, kk 1) of quadrant Q
+        auto mma_mn = [&](auto q_, auto buf_, auto m_, auto n_) {
+            constexpr int Q = decltype(q_)::value, BUF = decltype(buf_)::value, m = decltype(m_)::value, n = decltype(n_)::value;
+            constexpr int CR = c_reg_q<Q, m, n>();
+#ifdef V9_SFR
+            const unsigned int sa = sfr_a[P][(Q / 2) * 4 + m], sb = sfr_b[P][n / 2];
+            constexpr int OA0 = Q % 2, OA1 = 2 + Q % 2, OB0 = n % 2, OB1 = 2 + n % 2;
+            const unsigned int sa0 = sa, sa1 = sa, sb0 = sb, sb1 = sb;
+#else
+            const unsigned int sa0 = v_sfa[Q][0], sa1 = v_sfa[Q][1], sb0 = v_sfb[0], sb1 = v_sfb[1];
+            constexpr int OA0 = m, OA1 = m, OB0 = n, OB1 = n;
+#endif
+            if constexpr (ZC) {
+                using base_mma = typename opus::remove_cvref_t<decltype(mma)>::MMA;
+                using i32x8_t = opus::vector_t<opus::i32_t, 8>;
+                const fp4x32_t& a = v_a[BUF][0][m]; const fp4x32_t& b = v_b[P][0][n];
+                const i32x8_t a8 = __builtin_shufflevector(a, a, 0, 1, 2, 3, -1, -1, -1, -1);
+                const i32x8_t b8 = __builtin_shufflevector(b, b, 0, 1, 2, 3, -1, -1, -1, -1);
+                if constexpr (CR >= 0) { [[clang::amdgpu_pin_agpr(CR)]] v_c[Q][m * 4 + n] = base_mma{}(a8, b8, static_cast<int>(sa0), static_cast<int>(sb0), opus::number<OA0>{}, opus::number<OB0>{}); }
+                else { [[clang::amdgpu_pin_vgpr(-CR - 2)]] v_c[Q][m * 4 + n] = base_mma{}(a8, b8, static_cast<int>(sa0), static_cast<int>(sb0), opus::number<OA0>{}, opus::number<OB0>{}); }
+            } else {
+                mma_scale_one<T, OA0, OB0, CR>(mma, v_a[BUF][0][m], v_b[P][0][n], v_c[Q][m * 4 + n], sa0, sb0);
+            }
+            mma_scale_one<T, OA1, OB1, CR>(mma, v_a[BUF][1][m], v_b[P][1][n], v_c[Q][m * 4 + n], sa1, sb1);
+        };
+        auto mma_q9 = [&](auto q_, auto buf_) {
+            opus::static_for<16>([&](auto i) { mma_mn(q_, buf_, number<decltype(i)::value / 4>{}, number<decltype(i)::value % 4>{}); });
+        };
+        auto mma_q9n = [&](auto q_, auto buf_, auto n_) {   // one B fragment n (n-major q3)
+            opus::static_for<4>([&](auto m) { mma_mn(q_, buf_, m, n_); });
+        };
+        // q0: A(t+1) half 1, A q1
+        copy_a(1 - P, 1, t + 1, NX1);
+        __builtin_amdgcn_sched_barrier(0);
+#ifndef V9_SFR
+        v_sfb[0] = v_sfbn[0]; v_sfb[1] = v_sfbn[1];
+        gather_a(number<3>{});
+#endif
+#ifndef V9_BST
+        copy_b(number<1 - P>{}, number<0>{}, number<1>{}, t + 1, NX1);
+#endif
+        load_aq(number<1>{}, number<1>{}, P);
+        mma_q9(number<0>{}, number<0>{});
+        sched_q0n();
+        __builtin_amdgcn_sched_barrier(0);
+        // q1: B(t+1) e2 e3 (BST) / e1 e2, A q2
+#ifdef V9_BST
+        copy_b(number<1 - P>{}, number<2>{}, number<2>{}, t + 1, NX1);
+#else
+        copy_b(number<1 - P>{}, number<1>{}, number<2>{}, t + 1, NX1);
+#endif
+        load_aq(number<2>{}, number<0>{}, P);
+#ifndef V10
+        if constexpr (FIRST) pend_part(number<2 * P>{});
+#endif
+        mma_q9(number<1>{}, number<1>{});
+        sched_q12<4>();
+        __builtin_amdgcn_sched_barrier(0);
+        // q2: (BST) panel of t+2, t+3 / B(t+1) e3, A q3
+#ifdef V9_BST
+        if constexpr (P == 0) copy_panel((t >> 1) + 1, NX2);
+#else
+        copy_b(number<1 - P>{}, number<3>{}, number<1>{}, t + 1, NX1);
+#ifdef V9_PNL
+        __builtin_amdgcn_sched_barrier(0);
+        if constexpr (P == 0) copy_panel((t >> 1) + 1, NX2);   // panel after B e3: counted below
+#endif
+#endif
+        load_aq(number<3>{}, number<1>{}, P);
+#ifdef V10
+        pend_one(t);
+#endif
+        mma_q9(number<2>{}, number<0>{});
+        sched_q12<2>();
+        __builtin_amdgcn_sched_barrier(0);
+        s_waitcnt_lgkmcnt(0_I);
+#ifdef V9_BST
+        s_waitcnt_vmcnt(number<P == 0 ? 6 : 4>{});   // younger than A(t+1) half 1: B e2 e3 (4) + panel (2, P 0)
+#elif defined(V9_PNL)
+        s_waitcnt_vmcnt(number<P == 0 ? 10 : 8>{});  // younger than A(t+1) half 1: B (8) + panel (2, P 0)
+#else
+        s_waitcnt_vmcnt(number<8>{});
+#endif
+        __builtin_amdgcn_s_barrier();
+        __builtin_amdgcn_sched_barrier(0);
+        // q3: A(t+2) half 0, scales and A q0 of t+1
+#if !defined(V9_BST) && !defined(V9_PNL)
+        if constexpr (P == 0) copy_panel((t >> 1) + 1, NX2);
+#endif
+        copy_a(P, 0, t + 2, NX2);
+#ifndef V10
+        if constexpr (FIRST) pend_part(number<2 * P + 1>{});
+#endif
+#ifdef V9_SFR
+        read_sfr(number<1 - P>{}, t + 1);
+#else
+        read_sf_k(t + 1);
+#endif
+        load_aq(number<0>{}, number<0>{}, 1 - P);
+#ifdef V9_BST
+        mma_q9n(number<3>{}, number<1>{}, number<0>{});
+        opus::static_for<8>([&](auto) { SGB(SCHED_MFMA, 1); SGB(SCHED_VMEM_READ, 1); SGB(SCHED_DS_READ, 3); });
+        __builtin_amdgcn_sched_barrier(0);
+        copy_b(number<P>{}, number<0>{}, number<1>{}, t + 2, NX2);   // B(t+2) e0: v_b[P] fragment 0 is free now
+        mma_q9n(number<3>{}, number<1>{}, number<1>{});
+        opus::static_for<8>([&](auto r) { SGB(SCHED_MFMA, 1); if constexpr (decltype(r)::value < 2) SGB(SCHED_VMEM_READ, 1); });
+        __builtin_amdgcn_sched_barrier(0);
+        copy_b(number<P>{}, number<1>{}, number<1>{}, t + 2, NX2);   // B(t+2) e1
+        mma_q9n(number<3>{}, number<1>{}, number<2>{});
+        opus::static_for<8>([&](auto r) { SGB(SCHED_MFMA, 1); if constexpr (decltype(r)::value < 2) SGB(SCHED_VMEM_READ, 1); });
+        __builtin_amdgcn_sched_barrier(0);
+        mma_q9n(number<3>{}, number<1>{}, number<3>{});
+#ifndef V9_SFR
+        gather_a(number<0>{}); gather_a(number<1>{}); gather_a(number<2>{}); gather_b();
+        opus::static_for<8>([&](auto) { SGB(SCHED_MFMA, 1); SGB(SCHED_VALU, 2); });
+#endif
+#else
+        mma_q9(number<3>{}, number<1>{});
+#ifdef V9_SFR
+        sched_q3();
+#else
+        gather_a(number<0>{}); gather_a(number<1>{}); gather_a(number<2>{}); gather_b();
+        sched_q3g();
+#endif
+#endif
+        __builtin_amdgcn_sched_barrier(0);
+    };
+#ifdef V9
+#define KTILE ktile9
+#else
+#define KTILE ktile5
+#endif
     // trips: first (zero-C, pending C stores), middle, last (next tile's head); K = 512: first = last
     // K = 512 (one trip): no cross-tile head (the first trip's K tiles >= loops are harmless reads of this tile)
-    ktile5(number<0>{}, number<true>{}, 0, number<false>{});
-    ktile5(number<1>{}, number<true>{}, 1, number<false>{});
+    KTILE(number<0>{}, number<true>{}, 0, number<false>{});
+    KTILE(number<1>{}, number<true>{}, 1, number<false>{});
 #pragma clang loop unroll(disable)
     for (int t = 2; t < loops - 2; t += 2) {
-        ktile5(number<0>{}, number<false>{}, t, number<false>{});
-        ktile5(number<1>{}, number<false>{}, t + 1, number<false>{});
+        KTILE(number<0>{}, number<false>{}, t, number<false>{});
+        KTILE(number<1>{}, number<false>{}, t + 1, number<false>{});
     }
     if (loops > 2) {
-        ktile5(number<0>{}, number<false>{}, loops - 2, number<true>{});
-        ktile5(number<1>{}, number<false>{}, loops - 1, number<true>{});
+        KTILE(number<0>{}, number<false>{}, loops - 2, number<true>{});
+        KTILE(number<1>{}, number<false>{}, loops - 1, number<true>{});
     }
     // ===== write back: top half now, bottom half staged and stored in the next tile's first trip =====
+#ifdef V10
+    for (int ii = loops; ii < 16; ++ii) pend_one(ii);   // K < 4096: the rest of the previous tile's bottom half
+#endif
     s_waitcnt_lgkmcnt(0_I);
     __builtin_amdgcn_s_barrier();
     __builtin_amdgcn_sched_barrier(0);

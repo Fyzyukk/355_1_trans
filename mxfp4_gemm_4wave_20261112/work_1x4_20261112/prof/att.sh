@@ -9,5 +9,5 @@ cp $src/gemm_a4w4_mxfp4_4wave_kernel.cc $src/gemm_a4w4_mxfp4_4wave_traits.hpp $s
 cd $d/src
 $CC -x hip -I$I -I. -std=c++17 -O3 -ffast-math $X --offload-arch=gfx950 --cuda-device-only gemm_a4w4_mxfp4_4wave_kernel.cc -o ../kernel.co || exit 1
 /opt/rocm/bin/hipcc -O2 -I. $H/launch.cpp -o ../launch 2>/dev/null || exit 1
-cd $d; HIP_VISIBLE_DEVICES=${GPU:-6} timeout 600 rocprofv3 --att 1 --att-target-cu ${ATT_CU:-1} --att-shader-engine-mask 0x1 --att-buffer-size 268435456 -d att -o r -- ./launch kernel.co ${SHAPE:-8192 8192 8192} 2 $SYM > att.log 2>&1
+cd $d; flock /tmp/gpu0.lock env HIP_VISIBLE_DEVICES=${GPU:-0} timeout 600 rocprofv3 --att 1 --att-target-cu ${ATT_CU:-1} --att-shader-engine-mask 0x1 --att-buffer-size 268435456 -d att -o r -- ./launch kernel.co ${SHAPE:-8192 8192 8192} 2 $SYM > att.log 2>&1
 echo "$name: $(find $d/att -name code.json | head -1)"

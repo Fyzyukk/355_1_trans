@@ -33,3 +33,14 @@ m10 214.3 µs，SF_DMA+SF_DMA2 211.1–211.7 µs（-1.5%，约 5.20P）。
 - XCD 均衡：GPU2 各 XCD 1700–1756 MHz，完全均衡上限 1.8%；每 CU 正好 4 个 tile，快 XCD 只早 ~0.13 tile，tile 粒度动态分配无效；只能 stream-K（切 ~8 份 + fp32 跨 CU 归约），净收益估计 <1%，不做。
 - trace（GPU2，单 CU）：m10 main loop 5120 cyc/趟（MFMA 忙 80.0%），衔接段 20587/tile；best 4910（83.4%），18520/tile。
   打包在 traces/trace_8192_GPU2_{m10_base,best_sfsh}.tar.gz（ui_output 目录 + stats csv + kernel.co）。
+
+## 2×2 shuffle 主线继续（GPU2，flock /tmp/gpu2.lock；三条线并行：1×4 用 GPU0，无 shuffle 路线用 GPU1）
+- **PF_SPREAD**：A1/B1 预取从 C01 挪到 C11（A1）/ C00（B1）。main loop 4910 → 4814 cyc/趟（-2%），但最慢 XCD 时钟 1687 → 1669（-1.1%）；GPU2 210.0 → 209.7。保留。
+- C01S（C01 的 16 DS + 8 VMEM 均匀排）：排布生效但 TA 吞吐不变，无收益。
+- C 写回缓存策略 C_AUX：nt（2，现状）最好；0 / sc0 慢约 3 µs，sc1 / nt sc1 慢约 2 µs。
+- A/B LDS-DMA 缓存策略 AB_AUX：0 / sc0 / sc1 / sc0 sc1 无差别；nt 明显变慢（~237 µs）。
+- main loop 指令（每趟 2 K tile）：256 MFMA、64 ds_read_b128、34 buffer_load、16 ds_read2st64、22 VALU、39 SALU，已无可删。
+- **ZC_PEEL**：main loop 第一趟单独实例化（main_trip lambda），C10/C01/C11 的第一条 MFMA 用 C=0，每 tile 省 192 条清零指令。48/48 正确，GPU2 209.6 → **208.8 µs（约 5.27P）**。SGPR spill 16（进 VGPR lane）。
+  **当前最好：-DSF_DMA -DSF_DMA2 -DSF_SHIFT -DPF_SPREAD -DZC_PEEL**
+- PEND_SPREAD（下半 C 的 16 条 store 从 prologue C00 摊到第一趟 4 个 quadrant）：24/24 正确，208.9 vs 208.9，无收益。
+  衔接段的根因是全卡同步的 C 突发写（每轮约 32 MB），在一个 tile 内部挪 store 位置降不了全卡峰值；2×2 没有空余 LDS 把 C 留到下一个 tile 慢慢写。

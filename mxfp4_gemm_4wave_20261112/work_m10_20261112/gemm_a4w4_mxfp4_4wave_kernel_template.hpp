@@ -5,6 +5,10 @@
 
 #include "gemm_a4w4_mxfp4_4wave_traits.hpp"
 
+#ifndef AB_AUX   // cache policy of the A / B LDS-DMA loads
+#define AB_AUX 0
+#endif
+
 using opus::operator""_I;
 
 // ===========================================================================
@@ -273,7 +277,7 @@ __device__ inline void async_load_imm(G& g, void* smem_base, const LG& u_g, cons
     opus::static_for<n>([&](auto i) {
         constexpr int io = imm[decltype(i)::value] - imm[0];
         static_assert(io >= 0 && io <= 4095, "LDS issue stride must fit the 12-bit MUBUF offset");
-        g.template async_load<VEC>(base, gofs[decltype(i)::value] - io, s_os, opus::number<io>{});
+        g.template async_load<VEC>(base, gofs[decltype(i)::value] - io, s_os, opus::number<io>{}, opus::number<AB_AUX>{});
     });
 }
 // sched_group_barrier masks (LLVM AMDGPU)
@@ -444,7 +448,7 @@ __device__ inline void sched_c00_store() {
 // and the pin attribute need an int vector).
 using fp4x32_t = opus::vector_t<opus::i32_t, 4>;
 
-template<class T, int M_REPEAT, int N_REPEAT, int C_REG, class MMA, class CF>
+template<class T, int M_REPEAT, int N_REPEAT, int C_REG, bool ZC = false, class MMA, class CF>
 __device__ inline void mma_scale_one(
     MMA& mma,
     const fp4x32_t& a,
@@ -458,11 +462,11 @@ __device__ inline void mma_scale_one(
     const i32x8_t a8 = __builtin_shufflevector(a, a, 0, 1, 2, 3, -1, -1, -1, -1);
     const i32x8_t b8 = __builtin_shufflevector(b, b, 0, 1, 2, 3, -1, -1, -1, -1);
     if constexpr (C_REG >= 0) {
-        [[clang::amdgpu_pin_agpr(C_REG)]] c = base_mma{}(a8, b8, c, static_cast<int>(v_sfa), static_cast<int>(v_sfb), opus::number<M_REPEAT>{}, opus::number<N_REPEAT>{});
+        [[clang::amdgpu_pin_agpr(C_REG)]] c = base_mma{}(a8, b8, ZC ? CF{} : c, static_cast<int>(v_sfa), static_cast<int>(v_sfb), opus::number<M_REPEAT>{}, opus::number<N_REPEAT>{});
     } else if constexpr (C_REG <= -2) {
-        [[clang::amdgpu_pin_vgpr(-C_REG - 2)]] c = base_mma{}(a8, b8, c, static_cast<int>(v_sfa), static_cast<int>(v_sfb), opus::number<M_REPEAT>{}, opus::number<N_REPEAT>{});
+        [[clang::amdgpu_pin_vgpr(-C_REG - 2)]] c = base_mma{}(a8, b8, ZC ? CF{} : c, static_cast<int>(v_sfa), static_cast<int>(v_sfb), opus::number<M_REPEAT>{}, opus::number<N_REPEAT>{});
     } else {
-        c = base_mma{}(a8, b8, c, static_cast<int>(v_sfa), static_cast<int>(v_sfb), opus::number<M_REPEAT>{}, opus::number<N_REPEAT>{});
+        c = base_mma{}(a8, b8, ZC ? CF{} : c, static_cast<int>(v_sfa), static_cast<int>(v_sfb), opus::number<M_REPEAT>{}, opus::number<N_REPEAT>{});
     }
 }
 
@@ -476,6 +480,9 @@ constexpr int c_reg() {
 // ===========================================================================
 // Kernel
 // ===========================================================================
+#ifndef C_AUX
+#define C_AUX 2
+#endif
 #ifndef EPI_VALU
 #define EPI_VALU 4
 #endif
@@ -515,10 +522,21 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
             const int linear = tid * H1_VEC + decltype(i)::value * T::BLOCK_SIZE * H1_VEC;
             const int r = linear / T::B_N + T::HALF_B_M, c = linear % T::B_N;
 #ifndef NO_CSTORE
-            store<H1_VEC>(g_cp, v_pend_c[i.value], r * kargs.stride_c + c, 0, opus::number<2>{});
+            store<H1_VEC>(g_cp, v_pend_c[i.value], r * kargs.stride_c + c, 0, opus::number<C_AUX>{});
 #else
             { const auto sink = __builtin_bit_cast(opus::vector_t<opus::u32_t, 4>, v_pend_c[decltype(i)::value]); asm volatile("" :: "v"(sink)); }
 #endif
+        });
+    };
+    // PEND_SPREAD: the bottom-half stores go out 4 at a time in the four quadrants of the first trip.
+    auto store_pend_part = [&](int tid, auto part_) {
+        constexpr int P = decltype(part_)::value;
+        auto g_cp = make_gmem(pend_c_ptr, pend_c ? 0xffffffffu : 0u);
+        opus::static_for<H1_COPIES / 4>([&](auto j) {
+            constexpr int i = P * (H1_COPIES / 4) + decltype(j)::value;
+            const int linear = tid * H1_VEC + i * T::BLOCK_SIZE * H1_VEC;
+            const int r = linear / T::B_N + T::HALF_B_M, c = linear % T::B_N;
+            store<H1_VEC>(g_cp, v_pend_c[i], r * kargs.stride_c + c, 0, opus::number<C_AUX>{});
         });
     };
     opus::vector_t<opus::e8m0_t, Traits::VEC_GLOBAL_SCALE> v_nsfa0, v_nsfb0;   // next tile's scale panel 0
@@ -587,7 +605,7 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
     using MMA = decltype(mma);
     using CFrag = opus::vector_t<D_ACC, MMA::mma_c_len>;   // one 16x16 C fragment, 4 fp32 per lane
     CFrag v_c[2][2][T::E_M * T::E_N];
-#ifdef CZ_OVL   // C00 is cleared here (folded into its first MFMA); the other quadrants inside the prologue C00 MFMAs
+#if defined(CZ_OVL) || defined(ZC_PEEL)   // C00 is cleared here (folded into its first MFMA); the other quadrants inside the prologue C00 MFMAs
     opus::static_for<T::E_M * T::E_N>([&](auto f) { clear(v_c[0][0][f.value]); });
 #else
     opus::static_for<2>([&](auto hm) { opus::static_for<2>([&](auto hn) { opus::static_for<T::E_M * T::E_N>([&](auto f) {
@@ -926,7 +944,11 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
         // C00 of tile 0 + A1, B1 of tile 0 (+ h1: the previous tile's bottom-half stores).
         load_a(rd_a, number<1>{});
         LOAD_B(rd_b, 1, 0);
+#ifdef PEND_SPREAD
+        if (loops < 4) store_pend_c(wave_id * T::WARP_SIZE + lane_id);
+#else
         store_pend_c(wave_id * T::WARP_SIZE + lane_id);
+#endif
 #ifdef CZ_OVL
         opus::static_for<2>([&](auto hm) { opus::static_for<2>([&](auto hn) { opus::static_for<T::E_M * T::E_N>([&](auto f) {
             if constexpr (hm.value + hn.value > 0) clear(v_c[hm.value][hn.value][f.value]);
@@ -966,8 +988,10 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
     int sf_rd = 0;
     // Two tiles per trip: stage / next_stage and the panel parity are compile-time in each
     // copy; A / B / C are pinned, so both copies use the same registers.
-#pragma clang loop unroll(disable)
-    for (; tile + 3 < loops; tile += 2) {
+    // ZC_PEEL: the first trip is a separate instance whose first MFMA of C10 / C01 / C11 (kk = 0) uses
+    // C = 0, so those accumulators need no clearing at the start of the tile.
+    auto main_trip = [&](auto first_) {
+        constexpr bool ZFIRST = decltype(first_)::value;
         {   // even tile
             constexpr int stage = 0;
             constexpr int next_stage = 1;
@@ -981,11 +1005,14 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
                 __builtin_amdgcn_sched_barrier(0);
 
                 // C10(t) + A0, B0 of tile t+2 -> stage(t), one buffer_load per 4 MFMAs.
+#ifdef PEND_SPREAD
+                if constexpr (ZFIRST) store_pend_part(wave_id * T::WARP_SIZE + lane_id, opus::number<0>{});
+#endif
                 prefetch_a(stage, tile + 2, 0);
                 prefetch_b(stage, tile + 2, 0);
                 opus::static_for<frags>([&](auto i) {
                     constexpr int m = decltype(i)::value / T::E_N, n = decltype(i)::value % T::E_N;
-                    mma_scale_one<T, SOA(0, m), SOB(0, n), c_reg<T, 1, 0, m, n>()>(mma, v_a[1][0][m], v_b[0][0][n], v_c[1][0][m * T::E_N + n], SFA(1, 0, m), SFB(0, 0, n));   // kk = 0
+                    mma_scale_one<T, SOA(0, m), SOB(0, n), c_reg<T, 1, 0, m, n>(), ZFIRST>(mma, v_a[1][0][m], v_b[0][0][n], v_c[1][0][m * T::E_N + n], SFA(1, 0, m), SFB(0, 0, n));   // kk = 0
                     mma_scale_one<T, SOA(1, m), SOB(1, n), c_reg<T, 1, 0, m, n>()>(mma, v_a[1][1][m], v_b[0][1][n], v_c[1][0][m * T::E_N + n], SFA(1, 1, m), SFB(0, 1, n));   // kk = 1
                 });
                 sched_x4<8, 0, 1, 0>();
@@ -996,6 +1023,9 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
                 __builtin_amdgcn_sched_barrier(0);
 
                 // C01(t) + scales and B0 of tile t+1 + A1, B1 of tile t+2.
+#ifdef PEND_SPREAD
+                if constexpr (ZFIRST) store_pend_part(wave_id * T::WARP_SIZE + lane_id, opus::number<1>{});
+#endif
                 load_sfa(rd_sfa, sf_rd, 1);
                 load_sfb(rd_sfb, sf_rd, 1);
                 LOAD_B(rd_b, 0, tile + 1);
@@ -1005,7 +1035,7 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
 #endif
                 opus::static_for<frags>([&](auto i) {
                     constexpr int m = decltype(i)::value / T::E_N, n = decltype(i)::value % T::E_N;
-                    mma_scale_one<T, SOA(0, m), SOB(0, n), c_reg<T, 0, 1, m, n>()>(mma, v_a[0][0][m], v_b[1][0][n], v_c[0][1][m * T::E_N + n], SFA(0, 0, m), SFB(1, 0, n));   // kk = 0
+                    mma_scale_one<T, SOA(0, m), SOB(0, n), c_reg<T, 0, 1, m, n>(), ZFIRST>(mma, v_a[0][0][m], v_b[1][0][n], v_c[0][1][m * T::E_N + n], SFA(0, 0, m), SFB(1, 0, n));   // kk = 0
                     mma_scale_one<T, SOA(1, m), SOB(1, n), c_reg<T, 0, 1, m, n>()>(mma, v_a[0][1][m], v_b[1][1][n], v_c[0][1][m * T::E_N + n], SFA(0, 1, m), SFB(1, 1, n));   // kk = 1
                 });
 #ifdef PF_SPREAD
@@ -1026,6 +1056,9 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
                 __builtin_amdgcn_sched_barrier(0);
 
                 // C11(t) + A0 of tile t+1 + scale transposes of half 0 of tile t+1.
+#ifdef PEND_SPREAD
+                if constexpr (ZFIRST) store_pend_part(wave_id * T::WARP_SIZE + lane_id, opus::number<2>{});
+#endif
                 load_a(rd_a, number<0>{});
                 read_sf(rd_sfa, rd_sfb, number<0>{});
 #ifdef PF_SPREAD
@@ -1034,7 +1067,7 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
                 SF_STEP_EVEN();   // even tile: sfa of the panel starting at tile + 2 (+ sfb of tile + 4 pending)
                 opus::static_for<frags>([&](auto i) {
                     constexpr int m = decltype(i)::value / T::E_N, n = decltype(i)::value % T::E_N;
-                    mma_scale_one<T, SOA(0, m), SOB(0, n), c_reg<T, 1, 1, m, n>()>(mma, v_a[1][0][m], v_b[1][0][n], v_c[1][1][m * T::E_N + n], SFA(1, 0, m), SFB(1, 0, n));   // kk = 0
+                    mma_scale_one<T, SOA(0, m), SOB(0, n), c_reg<T, 1, 1, m, n>(), ZFIRST>(mma, v_a[1][0][m], v_b[1][0][n], v_c[1][1][m * T::E_N + n], SFA(1, 0, m), SFB(1, 0, n));   // kk = 0
                     mma_scale_one<T, SOA(1, m), SOB(1, n), c_reg<T, 1, 1, m, n>()>(mma, v_a[1][1][m], v_b[1][1][n], v_c[1][1][m * T::E_N + n], SFA(1, 1, m), SFB(1, 1, n));   // kk = 1
                 });
 #ifdef PF_SPREAD
@@ -1045,6 +1078,9 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
                 __builtin_amdgcn_sched_barrier(0);
 
                 // C00(t+1) + A1, B1 of tile t+1 + scale transposes of half 1 of tile t+1.
+#ifdef PEND_SPREAD
+                if constexpr (ZFIRST) store_pend_part(wave_id * T::WARP_SIZE + lane_id, opus::number<3>{});
+#endif
                 load_a(rd_a, number<1>{});
                 LOAD_B(rd_b, 1, tile + 1);
                 read_sf(rd_sfa, rd_sfb, number<1>{});
@@ -1165,7 +1201,17 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
                 __builtin_amdgcn_sched_barrier(0);
             });
         }
+        };
+#ifdef ZC_PEEL
+    if (tile + 3 < loops) { main_trip(opus::bool_constant<true>{}); tile += 2; }
+    else {
+        opus::static_for<2>([&](auto hm) { opus::static_for<2>([&](auto hn) { opus::static_for<T::E_M * T::E_N>([&](auto f) {
+            if constexpr (hm.value + hn.value > 0) clear(v_c[hm.value][hn.value][f.value]);
+        }); }); });
     }
+#endif
+#pragma clang loop unroll(disable)
+    for (; tile + 3 < loops; tile += 2) main_trip(opus::bool_constant<false>{});
     // At most one more steady iteration (odd number of them).
 #pragma clang loop unroll(disable)
     for (; tile + 2 < loops; ++tile) {
@@ -1352,7 +1398,7 @@ void gemm_a4w4_mxfp4_4wave_kernel(opus_gemm_mxfp4_scale_kargs kargs) {
             const int linear = output_thread_id * VEC_OUT + decltype(i)::value * T::BLOCK_SIZE * VEC_OUT;
             const int r = linear / T::B_N + half_tile_m * T::HALF_B_M, c = linear % T::B_N;
 #ifndef NO_CSTORE
-            store<VEC_OUT>(g_c, v[i.value], r * kargs.stride_c + c, 0, opus::number<2>{});
+            store<VEC_OUT>(g_c, v[i.value], r * kargs.stride_c + c, 0, opus::number<C_AUX>{});
 #else
             { const auto sink = __builtin_bit_cast(opus::vector_t<opus::u32_t, 4>, v[decltype(i)::value]); asm volatile("" :: "v"(sink)); }
 #endif

@@ -1,6 +1,6 @@
 # work_m10_20261112 —— m10 之后的实验版本（宏开关）
 
-当前最好：`make EXTRA="-DSF_DMA -DSF_DMA2 -DSF_SHIFT -DPF_SPREAD"`（或 `./build_var.sh best "-DSF_DMA -DSF_DMA2 -DSF_SHIFT -DPF_SPREAD"`）。
+当前最好：`make EXTRA="-DSF_DMA -DSF_DMA2 -DSF_SHIFT -DPF_SPREAD -DZC_PEEL"`（GPU2 208.8 µs，约 5.27P）。
 GPU2 8192³：m10 214.3 µs → 209.7 µs（约 5.24P）。各宏的含义、数据和失败尝试见 EXPERIMENTS.md。
 
 trace（GPU2，单 CU，../traces/）：
